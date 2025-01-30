@@ -1,11 +1,11 @@
 {
   "name": "X-KING",
   "description": "X-KING Multi Device whatsapp bot",
-  "logo": "https://files.catbox.moe/lt53tx.jpg",
+  "logo": "https://files.catbox.moe/y7memr.jpg",
   "keywords": ["whatsapp"],
-  "repository": "https://github.com/kingzoro-bot/x-king",
+  "repository": "https://github.com/KING-DAVIDX/X-KING",
   "website": "x-team.us.kg",
-  "success_url": "https://github.com/kingzoro-bot/x-king",
+  "success_url": "https://github.com/KING-DAVIDX/X-KING",
   "stack": "container",
   "env": {
     "SESSION_ID": {
@@ -19,7 +19,7 @@
      "AUDIO_DATA": {
       "description": "audio data , title;artist;image url",
       "required": "false",
-      "value": "nikka ; hakixer ; https://files.catbox.moe/lt53tx.jpg"
+      "value": "x-king ; kingdavid ; https://files.catbox.moe/y7memr.jpg"
      },
      "CAPTION": {
       "description": "enter your media caption",
@@ -27,14 +27,14 @@
       "value": "> POWERED BY X TEAM"
     },
        "STICKER_DATA": {
-      "description": "Sticker pack name, eg : H4KI;XER",
+      "description": "Sticker pack name, eg : KING; DAVID",
       "required": "false",
-      "value": "H4KI;XER"
+      "value": "KING;DAVID"
     },
        "BOT_INFO": {
       "description": "Bot info : botname;ownername;imageurl - image or video",
       "required": "false",
-      "value": "nikka;haki;https://files.catbox.moe/lt53tx.jpg"
+      "value": "x-king;king;https://files.catbox.moe/y7memr.jpg"
     },
      "ALWAYS_ONLINE": {
       "description": "Bot online online : true",
