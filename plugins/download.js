@@ -70,22 +70,22 @@ command(
 
     if (userChoice === "1") {
       await king.react("🎵");
-      const downloadApiUrl = `https://fastrestapis.fasturl.cloud/downup/ytmp3?url=${encodeURIComponent(videoUrl)}&quality=128kbps`;
+      const downloadApiUrl = `https://api.ahmmikun.live/api/downloader/ytdl?url=${encodeURIComponent(videoUrl)}&type=mp3`;
 
       try {
         const downloadResponse = await fetch(downloadApiUrl);
         const downloadData = await downloadResponse.json();
 
-        if (downloadData.status === 200 && downloadData.content === "Success") {
-          const { title, metadata: { thumbnail }, url, media, quality } = downloadData.result;
+        if (downloadData.data && downloadData.data.status) {
+          const { title, image, downloadUrl } = downloadData.data.mediaInfo;
 
-          const audioResponse = await fetch(media);
+          const audioResponse = await fetch(downloadUrl);
           const audioBuffer = await audioResponse.arrayBuffer();
 
-          const caption = `*X-KING MUSIC DOWNLOADER*\n> 🎵 *Title:* ${title}\n> 🎧 *Quality:* ${quality}`;
+          const caption = `*X-KING MUSIC DOWNLOADER*\n> 🎵 *Title:* ${title}`;
 
           await king.client.sendMessage(king.jid, {
-            image: { url: thumbnail },
+            image: { url: image },
             caption: caption,
             mimetype: "image/jpeg",
           });
@@ -99,12 +99,12 @@ command(
               externalAdReply: {
                 title: "⇆ㅤ ||◁ㅤ❚❚ㅤ▷ㅤ ⇆",
                 body: "01:43 ━━━━●───── 03:50",
-                sourceUrl: url,
-                mediaUrl: url,
+                sourceUrl: downloadUrl,
+                mediaUrl: downloadUrl,
                 mediaType: 1,
                 showAdAttribution: true,
                 renderLargerThumbnail: true,
-                thumbnailUrl: thumbnail || "https://files.catbox.moe/y7memr.jpg",
+                thumbnailUrl: image || "https://files.catbox.moe/y7memr.jpg",
               },
             },
           });
@@ -119,109 +119,87 @@ command(
       }
 
     } else if (userChoice === "2") {
-      await king.react("📽️");
+  await king.react("📽️");
 
-      const downloadApiUrl = `https://fastrestapis.fasturl.cloud/downup/ytmp4?url=${encodeURIComponent(videoUrl)}&quality=720`;
+  const downloadApiUrl = `https://api.siputzx.my.id/api/d/ytmp4?url=${encodeURIComponent(videoUrl)}`;
 
-      try {
-        const downloadResponse = await fetch(downloadApiUrl);
-        const downloadData = await downloadResponse.json();
+  try {
+    const downloadResponse = await fetch(downloadApiUrl);
+    const downloadData = await downloadResponse.json();
 
-        if (downloadData.status === 200 && downloadData.content === "Success") {
-          const { title, metadata: { thumbnail, duration, views, uploadDate }, url, media, quality } = downloadData.result;
+    if (downloadData.status && downloadData.data) {
+      const { title, dl, image } = downloadData.data;
 
-          const videoResponse = await fetch(media);
-          const videoBuffer = await videoResponse.arrayBuffer();
+      const videoResponse = await fetch(dl);
+      const videoBuffer = await videoResponse.arrayBuffer();
 
-          const caption = `*X-KING VIDEO DOWNLOADER*\n> 🎬 *Title:* ${title}\n> ⏳ *Duration:* ${duration}\n> 👀 *Views:* ${views}\n> 📅 *Uploaded:* ${uploadDate}\n> 📽 *Quality:* ${quality}`;
+      const caption = `*X-KING VIDEO DOWNLOADER*\n> 🎬 *Title:* ${title}`;
 
-          await king.client.sendMessage(king.jid, {
-            image: { url: thumbnail },
-            caption: caption,
-            mimetype: "image/jpeg",
-          });
+      await king.client.sendMessage(king.jid, {
+        image: { url: image || "https://files.catbox.moe/y7memr.jpg" },
+        caption: caption,
+        mimetype: "image/jpeg",
+      });
 
-          await king.client.sendMessage(king.jid, {
-            video: Buffer.from(videoBuffer),
-            mimetype: "video/mp4",
-            fileLength: videoBuffer.byteLength,
-            caption: title,
-            contextInfo: {
-              externalAdReply: {
-                title: "▶️ Watch on YouTube",
-                body: "Click to watch the original video",
-                sourceUrl: url,
-                mediaUrl: url,
-                mediaType: 1,
-                showAdAttribution: true,
-                renderLargerThumbnail: true,
-                thumbnailUrl: thumbnail || "https://files.catbox.moe/y7memr.jpg",
-              },
-            },
-          });
+      await king.client.sendMessage(king.jid, {
+        video: Buffer.from(videoBuffer),
+        mimetype: "video/mp4",
+        fileLength: videoBuffer.byteLength,
+        caption: title,
+        contextInfo: {
+          externalAdReply: {
+            title: "▶️ Watch on YouTube",
+            body: "Click to watch the original video",
+            sourceUrl: dl,
+            mediaUrl: dl,
+            mediaType: 1,
+            showAdAttribution: true,
+            renderLargerThumbnail: true,
+            thumbnailUrl: image || "https://files.catbox.moe/y7memr.jpg",
+          },
+        },
+      });
 
-          await king.react("✅");
-        } else {
-          await king.reply("_*Failed to fetch the video. Please try again later!*_");
-        }
-      } catch (error) {
-        console.error("Error occurred:", error);
-        await king.reply("_*An error occurred while processing the request. Please try again later!*_");
-      }
+      await king.react("✅");
+    } else {
+      await king.reply("_*Failed to fetch the video. Please try again later!*_");
     }
+  } catch (error) {
+    console.error("Error occurred:", error);
+    await king.reply("_*An error occurred while processing the request. Please try again later!*_");
+  }
+}
   }
 );
 command(
   {
     pattern: "youtube",
     fromMe: isPrivate,
-    desc: "Fetches details for a direct video link.",
-    type: "Download",
+    desc: "Downloads audio or video from the provided link.",
+    type: "download",
   },
   async (king, match, m) => {
     match = match || m.quoted?.text?.trim();
-    
     if (!match) {
-      return king.send("_*Provide a valid YouTube link!*_");
+      return king.send("_*Provide a valid link!*_");
     }
 
-    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]+/;
-    if (!youtubeRegex.test(match)) {
-      return king.send("_*Invalid link! Please provide a valid YouTube video link.*_");
-    }
+    await king.react("🔗");
 
-    await king.react("🔍");
+    const videoUrl = match;
 
-    const searchApiUrl = `https://nikka-api.us.kg/search/yts?apiKey=nikka&q=${encodeURIComponent(match)}`;
+    const caption = `*X-KING MEDIA DOWNLOADER*\n> 📌 *Link:* ${videoUrl}\n\n⚡ *Choose an option:*\n1️⃣ Download as *Audio*\n2️⃣ Download as *Video*`;
 
-    try {
-      const searchResponse = await fetch(searchApiUrl);
-      const searchData = await searchResponse.json();
+    const sent = await king.client.sendMessage(king.jid, {
+      image: { url: "https://files.catbox.moe/y7memr.jpg" },
+      caption: caption,
+      mimetype: "image/jpeg",
+    });
 
-      if (!searchData || !searchData.data || searchData.data.length === 0) {
-        await king.react("❌");
-        return king.send("_*No results found for your query!*_");
-      }
-
-      const firstResult = searchData.data[0];
-      const videoUrl = firstResult.url;
-
-      const caption = `*X-KING MEDIA DOWNLOADER*\n> 📌 *Title:* ${firstResult.title}\n> 🔗 *Link:* ${firstResult.url}\n> 👀 *Views:* ${firstResult.views}\n> ⏳ *Duration:* ${firstResult.timestamp}\n\n⚡ *Choose an option:*\n1️⃣ Download as *Audio*\n2️⃣ Download as *Video*`;
-
-      const sent = await king.client.sendMessage(king.jid, {
-        image: { url: firstResult.thumbnail },
-        caption: caption,
-        mimetype: "image/jpeg",
-      });
-
-      testCommandTracker = { id: sent?.key?.id, videoUrl };
-
-    } catch (error) {
-      console.error("Error occurred:", error);
-      await king.send("_*An error occurred while processing the request. Please try again later!*_");
-    }
+    testCommandTracker = { id: sent?.key?.id, videoUrl };
   }
 );
+
 command(
   {
     pattern: ".*",
@@ -243,28 +221,22 @@ command(
 
     if (userChoice === "1") {
       await king.react("🎵");
-      const downloadApiUrl = `https://fastrestapis.fasturl.cloud/downup/ytmp3?url=${encodeURIComponent(videoUrl)}&quality=128kbps`;
-      
+      const downloadApiUrl = `https://api.ahmmikun.live/api/downloader/ytdl?url=${encodeURIComponent(videoUrl)}&type=mp3`;
+
       try {
         const downloadResponse = await fetch(downloadApiUrl);
         const downloadData = await downloadResponse.json();
 
-        if (downloadData.status === 200 && downloadData.content === "Success") {
-          const {
-            title,
-            metadata: { thumbnail },
-            url,
-            media,
-            quality,
-          } = downloadData.result;
+        if (downloadData.data && downloadData.data.status) {
+          const { title, image, downloadUrl } = downloadData.data.mediaInfo;
 
-          const audioResponse = await fetch(media);
+          const audioResponse = await fetch(downloadUrl);
           const audioBuffer = await audioResponse.arrayBuffer();
 
-          const caption = `*X-KING MUSIC DOWNLOADER*\n> 🎵 *Title:* ${title}\n> 🎧 *Quality:* ${quality}`;
+          const caption = `*X-KING MUSIC DOWNLOADER*\n> 🎵 *Title:* ${title}`;
 
           await king.client.sendMessage(king.jid, {
-            image: { url: thumbnail },
+            image: { url: image },
             caption: caption,
             mimetype: "image/jpeg",
           });
@@ -278,12 +250,12 @@ command(
               externalAdReply: {
                 title: "⇆ㅤ ||◁ㅤ❚❚ㅤ▷ㅤ ⇆",
                 body: "01:43 ━━━━●───── 03:50",
-                sourceUrl: url,
-                mediaUrl: url,
+                sourceUrl: downloadUrl,
+                mediaUrl: downloadUrl,
                 mediaType: 1,
                 showAdAttribution: true,
                 renderLargerThumbnail: true,
-                thumbnailUrl: thumbnail || "https://files.catbox.moe/y7memr.jpg",
+                thumbnailUrl: image || "https://files.catbox.moe/y7memr.jpg",
               },
             },
           });
@@ -300,36 +272,26 @@ command(
     } else if (userChoice === "2") {
       await king.react("📽️");
 
-      const downloadApiUrl = `https://fastrestapis.fasturl.cloud/downup/ytmp4?url=${encodeURIComponent(videoUrl)}&quality=720`;
+      const downloadApiUrl = `https://api.siputzx.my.id/api/d/ytmp4?url=${encodeURIComponent(videoUrl)}`;
 
       try {
-        // Fetch the download details
         const downloadResponse = await fetch(downloadApiUrl);
         const downloadData = await downloadResponse.json();
 
-        if (downloadData.status === 200 && downloadData.content === "Success") {
-          const {
-            title,
-            metadata: { thumbnail, duration, views, uploadDate },
-            url,
-            media,
-            quality,
-          } = downloadData.result;
+        if (downloadData.status && downloadData.data) {
+          const { title, dl, image } = downloadData.data;
 
-          // Fetch the video file
-          const videoResponse = await fetch(media);
+          const videoResponse = await fetch(dl);
           const videoBuffer = await videoResponse.arrayBuffer();
 
-          const caption = `*X-KING VIDEO DOWNLOADER*\n> 🎬 *Title:* ${title}\n> ⏳ *Duration:* ${duration}\n> 👀 *Views:* ${views}\n> 📅 *Uploaded:* ${uploadDate}\n> 📽 *Quality:* ${quality}`;
+          const caption = `*X-KING VIDEO DOWNLOADER*\n> 🎬 *Title:* ${title}`;
 
-          // Send the thumbnail and caption
           await king.client.sendMessage(king.jid, {
-            image: { url: thumbnail },
+            image: { url: image || "https://files.catbox.moe/y7memr.jpg" },
             caption: caption,
             mimetype: "image/jpeg",
           });
 
-          // Send the video file
           await king.client.sendMessage(king.jid, {
             video: Buffer.from(videoBuffer),
             mimetype: "video/mp4",
@@ -339,28 +301,27 @@ command(
               externalAdReply: {
                 title: "▶️ Watch on YouTube",
                 body: "Click to watch the original video",
-                sourceUrl: url,
-                mediaUrl: url,
+                sourceUrl: dl,
+                mediaUrl: dl,
                 mediaType: 1,
                 showAdAttribution: true,
                 renderLargerThumbnail: true,
-                thumbnailUrl: thumbnail || "https://files.catbox.moe/y7memr.jpg",
+                thumbnailUrl: image || "https://files.catbox.moe/y7memr.jpg",
               },
             },
           });
 
           await king.react("✅");
         } else {
-          await king.send("_*Failed to fetch the video. Please try again later!*_");
+          await king.reply("_*Failed to fetch the video. Please try again later!*_");
         }
       } catch (error) {
         console.error("Error occurred:", error);
-        await king.send("_*An error occurred while processing the request. Please try again later!*_");
+        await king.reply("_*An error occurred while processing the request. Please try again later!*_");
       }
     }
   }
 );
-
 command(
   {
     pattern: "yts",
@@ -377,9 +338,10 @@ command(
 
       await king.react("⏳️");
 
-      // Parse query and optional limit
-      const [query, limit] = match.split(",").map((item) => item.trim());
-      const maxResults = limit && !isNaN(limit) ? parseInt(limit) : null;
+      // Extract query and optional result count
+      const args = match.split(" ");
+      const query = args.slice(0, -1).join(" ") || args[0];
+      const limit = args.length > 1 && !isNaN(args[args.length - 1]) ? parseInt(args[args.length - 1]) : null;
 
       const response = await getJson(`https://nikka-api.us.kg/search/yts?apiKey=nikka&q=${query}`);
 
@@ -388,20 +350,24 @@ command(
         return await king.reply("No results found for your query.");
       }
 
-      // Limit results if a valid limit is provided
-      const results = response.data.slice(0, maxResults || response.data.length).map((res, index) => {
+      // Apply limit if provided
+      const results = response.data.slice(0, limit || response.data.length).map((res, index) => {
         return `
-📌 **Result ${index + 1}:**
-> **Title:** ${res.title || "N/A"}
-> **Description:** ${res.description || "N/A"}
-> **URL:** ${res.url || "N/A"}
+🎥 *Result ${index + 1}:*  
+📌 *Title:* ${res.title || "N/A"}  
+📜 *Description:* ${res.description || "N/A"}  
+⏳ *Duration:* ${res.timestamp || "N/A"}  
+👁️ *Views:* ${res.views.toLocaleString() || "N/A"}  
+📅 *Uploaded:* ${res.ago || "N/A"}  
+🔗 *URL:* ${res.url || "N/A"}  
+👤 *Channel:* [${res.author?.name || "N/A"}](${res.author?.url || "#"})  
         `;
       }).join("\n\n");
 
       await king.client.sendMessage(
         king.jid,
         {
-          text: `🎥 **YouTube Search Results:**\n\n${results}`,
+          text: `🔎 *YouTube Search Results:*\n\n${results}`,
         }
       );
 
