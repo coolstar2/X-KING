@@ -15,6 +15,7 @@ const config = require("./config");
 const { PluginDB } = require("./lib/database/plugins");
 const Greetings = require("./lib/Greetings");
 const saveCreds = require("./lib/session");
+const { initializeStore } = require('./lib/sql_init');
 
 const store = makeInMemoryStore({
   logger: pino().child({ level: "silent", stream: "store" }),
@@ -66,6 +67,7 @@ fs.readdirSync("./lib/database/").forEach((plugin) => {
 async function Abhiy() {
   console.log("Syncing Database");
   await config.DATABASE.sync();
+  await initializeStore();
 
   const { state, saveCreds } = await useMultiFileAuthState(
     "./lib/session",
@@ -82,6 +84,7 @@ async function Abhiy() {
   });
 
   store.bind(conn.ev);
+  await global.store.bind(conn.ev);
 
   setInterval(() => {
     store.writeToFile("./lib/store_db.json");
