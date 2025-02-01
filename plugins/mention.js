@@ -5,7 +5,7 @@ const fetch = require("node-fetch");
 const fileType = require("file-type");
 const config = require("../config"); // Ensure config has STICKER_DATA
 
-const mentionJid = king.user;
+const mentionJid = '2349123721026@s.whatsapp.net';
 const mentionActions = {};
 const MAX_FILE_SIZE_MB = 200;
 
