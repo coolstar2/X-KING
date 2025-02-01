@@ -1,8 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const PDFDocument = require("pdfkit");
-const { command } =  require("../lib");
-
+const { command, isPrivate, getJson } = require("../lib/");
 let tempImages = []; // Temporary storage for images
 const defaultFont = "Helvetica"; // Default font
 const availableFonts = ["Helvetica", "Times-Roman", "Courier", "ZapfDingbats"]; // Built-in PDFKit fonts
