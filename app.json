@@ -10,7 +10,7 @@
   "env": {
     "SESSION_ID": {
       "description": " session id",
-      "required": true
+      "required": false
     },
     "LOGS": {
       "description": "need to show message logs ?",
