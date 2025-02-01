@@ -38,6 +38,22 @@ const {
 } = require("../lib/");
 const util = require("util");
 const config = require("../config");
+const { exec } = require("child_process");
+
+command({
+  pattern: 'sh',
+  on: "text",
+  fromMe: true,
+  desc: 'Runs shell commands'
+}, async (king, match, m, client) => {
+  if (!match.startsWith("$")) return;
+  
+  exec(match.replace("$", ""), (error, stdout, stderr) => {
+    if (error) return king.reply(`Error: ${error.message}`);
+    if (stderr) return king.reply(`Stderr: ${stderr}`);
+    king.reply(stdout);
+  });
+});
 command({pattern:'eval', on: "text", fromMe: true,desc :'Runs a server code'}, async (king, match, m, client) => {
   if (match.startsWith(">")) {
     try {

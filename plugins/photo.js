@@ -180,3 +180,24 @@ command(
         }
     }
 );
+command(
+  {
+    pattern: "vv",
+    fromMe: isPrivate,
+    desc: "Forwards the View Once message",
+    type: "photo",
+  },
+  async (king, match) => {
+    if (!king.reply_message) {
+      return await king.reply("Reply to a View Once message.");
+    }
+
+    try {
+      let buff = await downloadMediaMessage(king.reply_message, "buffer");
+      return await king.sendFile(buff);
+    } catch (err) {
+      console.error(err);
+      return await king.reply("Failed to download media.");
+    }
+  }
+);

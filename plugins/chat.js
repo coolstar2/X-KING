@@ -233,7 +233,7 @@ command(
     pattern: "getpp",
     fromMe: true,
     desc: "Fetch the profile picture of a tagged user or replied user.",
-    type: "utility",
+    type: "user",
   },
   async (king) => {
     try {
@@ -325,6 +325,74 @@ command(
           // Already deleted above
           break;
       }
+    }
+  }
+);
+let antibotAction = "off"; // Default action is off
+let warnings = {}; // Store warning counts per user
+
+command(
+  {
+    pattern: "antibot",
+    fromMe: true,
+    desc: "Enable Antibot and set action (off/warn/delete/kick)",
+    type: "group",
+  },
+  async (king, match) => {
+    if (!match) {
+      return await king.reply(`*Current Antibot Action:* ${antibotAction}\n\nUse *#antibot off/warn/delete/kick* to change it.`);
+    }
+
+    const action = match.toLowerCase();
+    if (["off", "warn", "delete", "kick"].includes(action)) {
+      antibotAction = action;
+      return await king.reply(`*Antibot action set to:* ${action.toUpperCase()}`);
+    } else {
+      return await king.reply("Invalid option! Use *#antibot off/warn/delete/kick*.");
+    }
+  }
+);
+
+command(
+  {
+    on: "text",
+    fromMe: false,
+  },
+  async (king) => {
+    if (!king.isGroup || antibotAction === "off") return; // Check if antibot is enabled
+
+    const messageId = king.m.id;
+    if (!messageId || !messageId.startsWith("3EB")) return;
+
+    let botAdmin = await isAdmin(king.jid, king.user, king.client);
+    let senderAdmin = await isAdmin(king.jid, king.participant, king.client);
+
+    if (!botAdmin) {
+      return await king.reply("*_I'm not an admin, so I can't take action!_*");
+    }
+
+    if (senderAdmin) {
+      return; // Ignore admins
+    }
+
+    await king.client.sendMessage(king.jid, { delete: king.key }); // Delete the detected bot message
+
+    switch (antibotAction) {
+      case "kick":
+        return await king.client.groupParticipantsUpdate(king.jid, [king.participant], "remove");
+
+      case "warn":
+        warnings[king.participant] = (warnings[king.participant] || 0) + 1;
+        if (warnings[king.participant] >= 3) {
+          delete warnings[king.participant]; // Reset warning count after kicking
+          return await king.client.groupParticipantsUpdate(king.jid, [king.participant], "remove");
+        } else {
+          return await king.reply(`⚠️ @${king.participant.split("@")[0]}, warning ${warnings[king.participant]}/3! Bots are not allowed!`, { mentions: [king.participant] });
+        }
+
+      case "delete":
+      default:
+        return;
     }
   }
 );

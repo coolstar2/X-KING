@@ -75,3 +75,78 @@ command(
         }
     }
 );
+
+
+// Function to send JSON to the API
+async function sendJsonToApi(jsonPayload) {
+    try {
+        const res = await fetch("https://fastrestapis.fasturl.cloud/aillm/gemini/image", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(jsonPayload),
+        });
+
+        if (!res.ok) {
+            throw new Error(`API request failed with status ${res.status}: ${res.statusText}`);
+        }
+
+        const data = await res.json();
+        return data;
+    } catch (error) {
+        console.error("Error sending JSON to API:", error);
+        throw new Error("Failed to send JSON to API.");
+    }
+}
+
+// Upload Command
+command(
+    {
+        pattern: "imgai",
+        fromMe: true,
+        desc: "Reply to a media message (sticker, image) to upload it, and user's query to the API, and get a response.",
+        type: "ai",
+    },
+    async (king, match, m) => {
+        if (!king.reply_message)
+            return await king.reply("*_Reply to a media message to upload it_*");
+
+        try {
+            const quotedMessage = m.quoted.message;
+            const mediaBuffer = await m.quoted.download();
+
+            if (!mediaBuffer) {
+                return await king.reply("*_Failed to download the media file._*");
+            }
+
+            const fileSizeMB = mediaBuffer.length / (1024 * 1024);
+            if (fileSizeMB > MAX_FILE_SIZE_MB) {
+                return await king.reply(`*_File size exceeds the 200MB limit._*`);
+            }
+
+            // Upload the media to Catbox
+            const catboxUrl = await uploadToCatbox(mediaBuffer);
+
+            // Prepare JSON payload
+            const jsonPayload = {
+                ask: match, // User's query
+                image: catboxUrl,
+            };
+
+            // Send JSON to the API
+            const apiResponse = await sendJsonToApi(jsonPayload);
+
+            // Check if the API response is successful
+            if (apiResponse.status === 200) {
+                // Respond with the API's result
+                await king.send(`*_API Response: ${apiResponse.result}_*`);
+            } else {
+                await king.reply(`*_API Error: ${apiResponse.content}_*`);
+            }
+        } catch (error) {
+            console.error('[ERROR]', error);
+            await king.reply("*_An error occurred while processing your request._*");
+        }
+    }
+);
