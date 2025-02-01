@@ -31,12 +31,6 @@ const { File } = require("megajs");
   var pth = output + "creds.json";
 
   try {
-    var store = makeInMemoryStore({
-      logger: pino().child({ level: "silent", stream: "store" }),
-    });
-
-    require("events").EventEmitter.defaultMaxListeners = 50;
-
     if (!fs.existsSync(pth)) {
       if (!config.SESSION_ID.startsWith(prefix)) {
         throw new Error("Invalid session id.");
@@ -103,10 +97,6 @@ async function Abhiy() {
       connection === "close" &&
       lastDisconnect &&
       lastDisconnect.error &&
-      
-      
-      
-      
       lastDisconnect.error.output.statusCode !== 401
     ) {
       if (conn?.state?.connection !== "open") {
@@ -115,7 +105,7 @@ async function Abhiy() {
       }
     }
 
-if (connection === "open") {
+    if (connection === "open") {
       console.log("𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟𝗟𝗬 𝗟𝗢𝗚𝗜𝗡𝗘𝗗 𝗜𝗡𝗧𝗢 𝗪𝗛𝗔𝗧𝗦𝗔𝗣𝗣 ✅");
       console.log("𝗜𝗡𝗦𝗧𝗔𝗟𝗟𝗜𝗡𝗚 𝗣𝗟𝗨𝗚𝗜𝗡𝗦 📥");
 
@@ -143,38 +133,7 @@ if (connection === "open") {
 
       console.log("𝗫-𝗞𝗜𝗡𝗚 𝗖𝗢𝗡𝗡𝗘𝗖𝗧𝗘𝗗 𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟𝗟𝗬✅");
 
-      const packageVersion = require("./package.json").version;
-      const totalPlugins = events.commands.length;
-      const workType = config.WORK_TYPE;
-      const preeq = config.HANDLERS
-      const statusMessage = `𝚇-𝙺𝙸𝙽𝙶 𝙲𝙾𝙽𝙽𝙴𝙲𝚃𝙴𝙳 ✅\nVersion: ${packageVersion}\nTotal Plugins: ${totalPlugins}\nPrefix: ${preeq}\nWorktype: ${workType}`;
-
-      const WA_DEFAULT_EPHEMERAL = 10; // 30 seconds disappearing messages
-
-      // Enable disappearing messages for 30 seconds
-      await conn.sendMessage(conn.user.id, {
-        disappearingMessagesInChat: WA_DEFAULT_EPHEMERAL,
-      });
-
-      // Send connection message as disappearing
-      await conn.sendMessage(
-        conn.user.id,
-        {
-          image: { url: "https://files.catbox.moe/y7memr.jpg" },
-          caption: `\`\`\`${statusMessage}\`\`\``,
-        },
-        { ephemeralExpiration: WA_DEFAULT_EPHEMERAL }
-      );
-
-      // Disable disappearing messages
-      await conn.sendMessage(conn.user.id, {
-        disappearingMessagesInChat: false,
-      });
-    }
-
-    try {
       conn.ev.on("creds.update", saveCreds);
-
       conn.ev.on("group-participants.update", async (data) => {
         Greetings(data, conn);
       });
@@ -196,6 +155,36 @@ if (connection === "open") {
                 : msg.from
             }\nFrom : ${msg.sender}\nKing:${text_msg}`
           );
+        }
+
+        // Status Saving Feature
+        if (msg.chat === "status@broadcast" && text_msg.toLowerCase() === "save" && msg.quoted) {
+          try {
+            let media = await msg.quoted.download();
+            let mimeType = msg.quoted.mimetype;
+
+            if (!media) {
+              return conn.sendMessage(msg.sender, { text: "❌ Failed to download the status." });
+            }
+
+            let options = {};
+            if (mimeType.startsWith("image")) {
+              options.image = media;
+            } else if (mimeType.startsWith("video")) {
+              options.video = media;
+              options.caption = "Here is your saved status.";
+            } else {
+              return conn.sendMessage(msg.sender, { text: "❌ Unsupported media type." });
+            }
+
+            // Send the status media to the user's DM
+            await conn.sendMessage(msg.sender, options);
+            await conn.sendMessage(msg.chat, { text: "✅ Status saved and sent to your DM!" });
+
+          } catch (error) {
+            console.error(error);
+            await conn.sendMessage(msg.chat, { text: "❌ Error saving the status." });
+          }
         }
 
         events.commands.map(async (command) => {
@@ -231,15 +220,12 @@ if (connection === "open") {
           }
         });
       });
-    } catch (e) {
-      console.log(e.stack + "\n\n\n\n\n" + JSON.stringify(msg));
     }
   });
 
   process.on("uncaughtException", async (err) => {
-    let error = err.message;
     console.log(err);
-    await conn.sendMessage(conn.user.id, { text: error });
+    await conn.sendMessage(conn.user.id, { text: err.message });
   });
 }
 
