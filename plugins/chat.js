@@ -396,3 +396,110 @@ command(
     }
   }
 );
+let anticallAction = "off"; // Default state
+let anticallCountries = []; // List of country codes to block
+let callWarnCount = {}; // Track warnings per user
+let callCooldown = {}; // Prevent spam warnings
+
+const COOLDOWN_TIME = 30 * 1000; // 30 seconds cooldown per caller
+
+// Command to Enable/Disable Anti-Call
+command(
+  {
+    pattern: "anticall",
+    fromMe: true,
+    desc: "Enable AntiCall (all/<country_code>) or turn off",
+    type: "owner",
+  },
+  async (king, match) => {
+    if (!match) {
+      return await king.reply(
+        `*Current AntiCall Action:* ${
+          anticallAction === "off"
+            ? "OFF"
+            : anticallAction === "all"
+            ? "ALL Calls Blocked"
+            : "Blocked for " + anticallCountries.join(", ")
+        }\n\nUse *#anticall all | <country_code> | off* to change it.`
+      );
+    }
+
+    const action = match.toLowerCase();
+
+    if (action === "off") {
+      anticallAction = "off";
+      anticallCountries = [];
+      return await king.reply(`*AntiCall Disabled!*`);
+    } else if (action === "all") {
+      anticallAction = "all";
+      return await king.reply(`*AntiCall enabled for ALL calls!*`);
+    } else if (/^\d+(,\d+)*$/.test(action)) {
+      anticallCountries = action.split(",").map((code) => code.trim());
+      anticallAction = "custom";
+      return await king.reply(`*AntiCall set to block country codes:* ${anticallCountries.join(", ")}`);
+    } else {
+      return await king.reply("❌ *Invalid option!* Use *#anticall all | <country_code> | off*.");
+    }
+  }
+);
+
+// Detect and Reject Incoming Calls (PRIVATE CHATS ONLY)
+king.client.ev.on("call", async (call) => {
+  if (anticallAction === "off") return; // Ignore if disabled
+
+  for (let node of call) {
+    if (node.isGroup) return; // Ignore group calls
+
+    let caller = node.from; // Caller ID (e.g., +234XXXXXXXX)
+    let countryCode = caller.startsWith("+") ? caller.slice(1, 4) : caller.slice(0, 3);
+
+    // Determine if call should be blocked
+    let shouldBlock =
+      anticallAction === "all" ||
+      (anticallAction === "custom" && anticallCountries.includes(countryCode));
+
+    if (shouldBlock) {
+      let now = Date.now();
+      
+      // Cooldown check: Skip if the caller was warned recently
+      if (callCooldown[caller] && now - callCooldown[caller] < COOLDOWN_TIME) {
+        return;
+      }
+      callCooldown[caller] = now; // Update cooldown time
+
+      // Track warnings per user
+      callWarnCount[caller] = (callWarnCount[caller] || 0) + 1;
+
+      await king.client.sendMessage(caller, {
+        text: `⚠️ *Warning! Calls are not allowed in private chat.*\n\nYou have ${
+          3 - callWarnCount[caller]
+        } warnings left before being blocked.`,
+      });
+
+      // Reject the call using the correct function
+      await king.client.rejectCall(node.id, caller);
+
+      if (callWarnCount[caller] >= 3) {
+        delete callWarnCount[caller];
+        delete callCooldown[caller];
+        return await king.client.updateBlockStatus(caller, "block"); // Block the user after 3 calls
+      }
+    }
+  }
+});
+// Command to detect and save media when a message starts with "save"
+command(
+  {
+    pattern: ".*",
+    on: "text",
+    fromMe: false, // Trigger for all users
+  },
+  async (king, match, m) => {
+    if (!match.startsWith("save")) return;
+    if (!king.reply_message) return king.send("_Reply to a message to save it!_");
+
+    await king.react("✅");
+
+    await king.client.sendMessage(king.user, { forward: king.reply_message });
+  }
+);
