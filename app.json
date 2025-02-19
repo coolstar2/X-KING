@@ -1,0 +1,76 @@
+{
+  "name": "X-KING",
+  "description": "X-KING Multi Device whatsapp bot",
+  "logo": "https://files.catbox.moe/y7memr.jpg",
+  "keywords": ["whatsapp"],
+  "repository": "https://github.com/KING-DAVIDX/X-KING",
+  "website": "x-team.us.kg",
+  "success_url": "https://github.com/KING-DAVIDX/X-KING",
+  "stack": "container",
+  "env": {
+    "SESSION_ID": {
+      "description": " session id",
+      "required": false
+    },
+    "LOGS": {
+      "description": "need to show message logs ?",
+      "required": false
+     },
+     "AUDIO_DATA": {
+      "description": "audio data , title;artist;image url",
+      "required": "false",
+      "value": "x-king ; kingdavid ; https://files.catbox.moe/y7memr.jpg"
+     },
+     "CAPTION": {
+      "description": "enter your media caption",
+      "required": "false",
+      "value": "> POWERED BY X TEAM"
+    },
+       "STICKER_DATA": {
+      "description": "Sticker pack name, eg : KING; DAVID",
+      "required": "false",
+      "value": "KING;DAVID"
+    },
+       "BOT_INFO": {
+      "description": "Bot info : botname;ownername;imageurl - image or video",
+      "required": "false",
+      "value": "x-king;king;https://files.catbox.moe/y7memr.jpg"
+    },
+     "ALWAYS_ONLINE": {
+      "description": "Bot online online : true",
+      "required": "false",
+      "value": "false"
+    },
+    "SUDO": {
+      "description": "sudo numbers with country code seperate with , for multiple numbers",
+      "required": false
+    },
+    "WORK_TYPE": {
+      "description": "bot work mode",
+      "required": "true",
+      "value": "public"
+     },
+    "PREFIX": {
+      "description": "Example 1: ^[.,!#]  example 2 ^ 👈🏻 Handlers disable",
+      "required": true,
+       "value":"^[.,]"
+     },
+    "HEROKU_APP_NAME": {
+      "description": "Heroku app name, same as above entered",
+      "required": true
+    },
+    "HEROKU_API_KEY": {
+      "description": "Heroku account api key, https://dashboard.heroku.com/account",
+      "required": true
+     }
+ },
+ "addons": [{
+      "plan": "heroku-postgresql"
+    }],
+    "buildpacks": [{
+      "url": "heroku-community/apt"
+      },
+      {
+      "url": "https://github.com/clhuang/heroku-buildpack-webp-binaries.git"
+      }]
+  }
