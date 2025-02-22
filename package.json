@@ -5,10 +5,12 @@
   "main": "./index.js",
   "type": "commonjs",
   "scripts": {
-    "start": "node index.js",
-    "restart": "npm run stop && npm run start",
-    "stop": "pkill -f 'node index.js'",
-    "logs": "tail -f nohup.out"
+    "start": "pm2 start index.js --name X-KING",
+    "restart": "pm2 restart X-KING",
+    "stop": "pm2 stop X-KING",
+    "logs": "pm2 logs X-KING",
+    "delete": "pm2 delete X-KING",
+    "status": "pm2 status"
   },
   "repository": {
     "type": "git",
