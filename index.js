@@ -6,7 +6,6 @@ const {
   default: makeWASocket,
   useMultiFileAuthState,
   Browsers,
-  makeInMemoryStore,
 } = require("@whiskeysockets/baileys");
 const { serialize } = require("./lib/serialize");
 const { King } = require("./lib/Base");
@@ -17,17 +16,14 @@ const { PluginDB } = require("./lib/database/plugins");
 const Greetings = require("./lib/Greetings");
 const { setupAntidelete } = require('./lib/Antidelete');
 const { initializeStore } = require("./lib/sql_init");
-const { generatePairingCode } = require("./lib/terminal"); // Import pairing function
+const { generatePairingCode } = require("./lib/terminal");
 
 require("events").EventEmitter.defaultMaxListeners = 50;
 
 const sessionFolder = "./lib/session/";
 const sessionFile = sessionFolder + "creds.json";
-const store = makeInMemoryStore({
-  logger: pino().child({ level: "silent", stream: "store" }),
-});
 
-let conn; // Define connection globally to avoid duplicate instances
+let conn;
 
 async function checkAndStartPairing() {
   if (!fs.existsSync(sessionFolder) || fs.readdirSync(sessionFolder).length === 0) {
@@ -55,16 +51,15 @@ async function checkAndStartPairing() {
           
           rl.close();
 
-          // Wait 1 minute (60 seconds) before checking session
           setTimeout(() => {
             const waitForCreds = setInterval(() => {
               if (fs.existsSync(sessionFile)) {
                 console.log("✅ Session successfully created.");
                 clearInterval(waitForCreds);
-                resolve(); // Continue to startBot()
+                resolve();
               }
             }, 1000);
-          }, 60000); // 60 seconds (1 minute)
+          }, 60000);
         } else {
           console.log("❌ Failed to generate pairing code. Try again.");
           rl.close();
@@ -85,7 +80,10 @@ const formatUptime = (seconds) => {
 async function startBot() {
   console.log("🔄 Syncing Database...");
   await config.DATABASE.sync();
+  
+  // Initialize SQL store first
   await initializeStore();
+  console.log("✅ SQL Store initialized");
 
   const { state, saveCreds } = await useMultiFileAuthState(sessionFolder);
 
@@ -98,70 +96,68 @@ async function startBot() {
     syncFullHistory: false,
   });
 
-  store.bind(conn.ev);
-
+  // Bind store to connection events
+    
+    console.log("✅ Store bound successfully");
+  
   conn.ev.on("connection.update", async (s) => {
     const { connection, lastDisconnect } = s;
 
     if (connection === "connecting") {
-        console.log("🔄 Processing session...");
+      console.log("🔄 Processing session...");
     }
 
     if (connection === "close") {
-        console.log("⚠️ Connection closed. Reconnecting...");
-        if (lastDisconnect?.error?.output?.statusCode !== 401) {
-            setTimeout(startBot, 5000); // Delay before retry
-        } else {
-            console.log("❌ Session expired. Restarting pairing process.");
-            fs.rmSync(sessionFolder, { recursive: true, force: true });
-            await checkAndStartPairing();
-            startBot();
-        }
+      console.log("⚠️ Connection closed. Reconnecting...");
+      if (lastDisconnect?.error?.output?.statusCode !== 401) {
+        setTimeout(startBot, 5000);
+      } else {
+        console.log("❌ Session expired. Restarting pairing process.");
+        fs.rmSync(sessionFolder, { recursive: true, force: true });
+        await checkAndStartPairing();
+        startBot();
+      }
     }
 
     if (connection === "open") {
-        console.log("✅ Successfully logged into WhatsApp!");
-        console.log("📥 Installing plugins...");
+      console.log("✅ Successfully logged into WhatsApp!");
+      console.log("📥 Installing plugins...");
+        await global.store.bind(conn.ev);
+        
 
-        let plugins = await PluginDB.findAll();
-        plugins.map(async (plugin) => {
-            if (!fs.existsSync("./plugins/" + plugin.dataValues.name + ".js")) {
-                console.log(plugin.dataValues.name);
-                var response = await got(plugin.dataValues.url);
-                if (response.statusCode === 200) {
-                    fs.writeFileSync("./plugins/" + plugin.dataValues.name + ".js", response.body);
-                    require("./plugins/" + plugin.dataValues.name + ".js");
-                }
-            }
-        });
-
-        console.log("✅ Plugins installed successfully.");
-
-        fs.readdirSync("./plugins").forEach((plugin) => {
-            if (path.extname(plugin).toLowerCase() === ".js") {
-                require("./plugins/" + plugin);
-            }
-        });
-
-        console.log("✅ X-KING Connected Successfully!");
-
-        // Bind store only after successful connection
-        if (!global.store) {
-            global.store = store;
-            global.store.bind(conn.ev);
+      let plugins = await PluginDB.findAll();
+      plugins.map(async (plugin) => {
+        if (!fs.existsSync("./plugins/" + plugin.dataValues.name + ".js")) {
+          console.log(plugin.dataValues.name);
+          var response = await got(plugin.dataValues.url);
+          if (response.statusCode === 200) {
+            fs.writeFileSync("./plugins/" + plugin.dataValues.name + ".js", response.body);
+            require("./plugins/" + plugin.dataValues.name + ".js");
+          }
         }
+      });
 
-        // **Move status message here after all plugins are loaded**
-        const packageVersion = require("./package.json").version;
-        const totalPlugins = events.commands.length; // Now correctly counts loaded commands
-        const workType = config.WORK_TYPE;
-        const preeq = config.HANDLERS;
-        const uptime = formatUptime(process.uptime());
+      console.log("✅ Plugins installed successfully.");
 
-        const statusMessage = `✨ *X-KING CONNECTED ✅* ✨\n\n📌 *Version:* ${packageVersion}\n⚡ *Total Plugins:* ${totalPlugins}\n🔹 *Prefix:* ${preeq}\n🛠 *Worktype:* ${workType}\n⏳ *Uptime:* ${uptime}`;
-        await conn.sendMessage(conn.user.id, { text: statusMessage });
+      fs.readdirSync("./plugins").forEach((plugin) => {
+        if (path.extname(plugin).toLowerCase() === ".js") {
+          require("./plugins/" + plugin);
+        }
+      });
+
+      console.log("✅ X-KING Connected Successfully!");
+
+      const packageVersion = require("./package.json").version;
+      const totalPlugins = events.commands.length;
+      const workType = config.WORK_TYPE;
+      const preeq = config.HANDLERS;
+      const uptime = formatUptime(process.uptime());
+
+      const statusMessage = `✨ *X-KING CONNECTED ✅* ✨\n\n📌 *Version:* ${packageVersion}\n⚡ *Total Plugins:* ${totalPlugins}\n🔹 *Prefix:* ${preeq}\n🛠 *Worktype:* ${workType}\n⏳ *Uptime:* ${uptime}`;
+      await conn.sendMessage(conn.user.id, { text: statusMessage });
     }
-});
+  });
+
   conn.ev.on("creds.update", saveCreds);
 
   conn.ev.on("group-participants.update", async (data) => {
@@ -170,10 +166,10 @@ async function startBot() {
 
   conn.ev.on("messages.update", async (updates) => {
     try {
-      const antideleteModule = await setupAntidelete(conn, global.store);
+      const antideleteModule = await setupAntidelete(conn);
       for (const update of updates) {
         if (update.update.message === null || update.update.messageStubType === 2) {
-          await antideleteModule.execute(conn, update, { store: global.store });
+          await antideleteModule.execute(conn, update, global.store);
         }
       }
     } catch (error) {
@@ -239,7 +235,6 @@ async function startBot() {
   });
 }
 
-// **Ensures pairing completes before bot starts**
 (async () => {
   await checkAndStartPairing();
   await startBot();

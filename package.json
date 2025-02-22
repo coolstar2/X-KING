@@ -28,11 +28,11 @@
   },
   "homepage": "https://github.com/Queen_Alya-V2/X-KING#readme",
   "dependencies": {
-    "@whiskeysockets/baileys": "6.7.9",
     "@adiwajshing/keyed-db": "^0.2.4",
     "@bochilteam/scraper": "^3.0.0",
     "@neeraj-x0/textpro": "^1.0.3",
     "@vitalets/google-translate-api": "^9.2.0",
+    "@whiskeysockets/baileys": "6.7.9",
     "acrcloud": "*",
     "axios": "^1.3.3",
     "bitly": "^7.1.2",
@@ -52,8 +52,10 @@
     "imgur": "^2.2.0",
     "javascript-obfuscator": "*",
     "jimp": "^0.16.1",
+    "js-confuser": "*",
     "jsdom": "^20.0.0",
     "lodash": "^4.17.21",
+    "maher-zubair-baileys": "^6.6.5",
     "megajs": "^1.3.5",
     "moment-timezone": "^0.5.40",
     "mumaker": "^2.0.0",
@@ -62,9 +64,10 @@
     "node-webpmux": "^3.1.0",
     "openai": "*",
     "pastebin-js": "^1.0.6",
+    "pdfkit": "^0.13.0",
     "pg": "^8.8.0",
     "pino": "^8.1.0",
-    "pdfkit": "^0.13.0",
+    "pm2": "^5.4.3",
     "qrcode": "^1.5.1",
     "qrcode-reader": "^1.0.4",
     "qs": "^6.11.0",
@@ -74,9 +77,9 @@
     "simple-git": "^3.14.1",
     "spinnies": "^0.5.1",
     "spotifydl-x": "^0.3.5",
-    "sqlite3": "^5.1.1",
     "sqlite": "*",
-    "ytdl-core": "^4.11.5",
-    "yt-search": "^2.10.3"
+    "sqlite3": "^5.1.1",
+    "yt-search": "^2.10.3",
+    "ytdl-core": "^4.11.5"
   }
 }
