@@ -23,7 +23,7 @@ command(
     try {
       let categoryFilter = match ? match.toLowerCase().trim() : null; // If "menu <type>" is used, filter by that type
 
-      let { prefix } = config.HANDLERS[2];
+      let { prefix } = king;
       let [date, time] = new Date()
         .toLocaleString("en-IN", { timeZone: "Africa/Lagos" })
         .split(",");
@@ -68,7 +68,7 @@ command(
    ╔┴────────────┈❍`;
         let comad = cmnd.filter(({ type }) => type == cmmd);
         comad.forEach(({ cmd }) => {
-          menu += `\n   │  ✧ ${prefix}${cmd.trim()}`;
+          menu += `\n   │  ✧ ${config.HANDLERS[2]}${cmd.trim()}`;
         });
         menu += `\n   ╚┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄❍`;
       });

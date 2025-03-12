@@ -29,7 +29,7 @@ function isAuthorized(sender) {
 // Command to explicitly toggle Alya ON or OFF
 command(
   {
-    pattern: "!alya",
+    pattern: "alya",
     fromMe: true,
     desc: "Turn Alya listener ON or OFF",
     type: "config",
@@ -51,8 +51,6 @@ command(
     }
   }
 );
-
-// Alya AI Listener
 command(
   {
     on: "text",
@@ -62,17 +60,20 @@ command(
 
     const text = m.body.trim().toLowerCase();
 
-    // Prevent false activations
-    if (!text.startsWith("alya ")) return;
+    // Check if the message contains "alya" anywhere
+    if (!text.includes("alya")) return;
 
-    let query = text.slice(5).trim();
+    // Extract the part after "alya" if it's at the beginning, otherwise take the whole message
+    let query = text.replace(/alya/gi, "").trim();
     if (!query) return await king.reply("What do you need help with?");
 
     const allCommands = await commands;
+    
+    // Try to find a matching command in the query
     let foundCommand = allCommands.find((cmd) => {
       if (!cmd.pattern) return false;
       const pattern = cmd.pattern.toString().toLowerCase();
-      return query.startsWith(pattern);
+      return query.includes(pattern); // Instead of startsWith(), use includes()
     });
 
     if (foundCommand) {
