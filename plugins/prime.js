@@ -60,21 +60,20 @@ command(
   async (king, match, m) => {
     if (!primeListener || !isAuthorized(m.sender)) return;
 
-    const text = m.body.trim();
-    if (!text.toLowerCase().startsWith("alya")) return;
+    const text = m.body.trim().toLowerCase();
+    if (!text.startsWith("alya ")) return;
 
     // Extract words after "alya"
-    let query = text.replace(/^alya\s*/i, "").trim();
+    let query = text.replace(/^alya\s+/i, "").trim();
     if (!query) return await king.reply("What do you need help with?");
 
     const allCommands = await commands;
-    const queryWords = query.split(/\s+/);
 
-    // **Check if any word after "alya" is a command**
+    // **Check if full query matches a command pattern**
     let foundCommand = allCommands.find((cmd) => {
       if (!cmd.pattern) return false;
-      const pattern = cmd.pattern.toString().toLowerCase().replace(/[\/\^$]/g, "");
-      return queryWords.some((word) => word === pattern);
+      const pattern = cmd.pattern.toString().replace(/[\/\^$]/g, "").toLowerCase();
+      return query === pattern; // Ensure exact match instead of partial word match
     });
 
     if (foundCommand) {
