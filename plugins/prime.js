@@ -1,6 +1,6 @@
 const { command, isPrivate, getJson } = require("../lib/");
 const axios = require("axios");
-const fetch = require('node-fetch');
+const fetch = require("node-fetch");
 const { downloadMediaMessage } = require("@whiskeysockets/baileys");
 const fileType = require("file-type");
 const Tesseract = require("tesseract.js");
@@ -26,19 +26,33 @@ function isAuthorized(sender) {
   );
 }
 
+// Command to explicitly toggle Alya ON or OFF
 command(
   {
-    pattern: "alya",
+    pattern: "!alya",
     fromMe: true,
-    desc: "Toggle prime listener on or off",
+    desc: "Turn Alya listener ON or OFF",
     type: "config",
   },
   async (king, match) => {
-    primeListener = !primeListener;
-    await king.reply(`✅ *Alya Listener is now* ${primeListener ? "ON ✅" : "OFF ❌"}`);
+    if (!match) return await king.reply("Usage: `!alya on` or `!alya off`");
+
+    const action = match.toLowerCase().trim();
+    if (action === "on") {
+      primeListener = true;
+      config.PRIME = true;
+      await king.reply("✅ *Alya Listener is now ON ✅*");
+    } else if (action === "off") {
+      primeListener = false;
+      config.PRIME = false;
+      await king.reply("❌ *Alya Listener is now OFF ❌*");
+    } else {
+      await king.reply("Invalid command! Use `!alya on` or `!alya off`.");
+    }
   }
 );
 
+// Alya AI Listener
 command(
   {
     on: "text",
@@ -46,20 +60,19 @@ command(
   async (king, match, m) => {
     if (!primeListener || !isAuthorized(m.sender)) return;
 
-    const text = m.body.trim();
-    if (text.toLowerCase() === "alya") {
-      return await king.reply("Yes, Master?");
-    }
+    const text = m.body.trim().toLowerCase();
 
-    if (!text.toLowerCase().startsWith("alya ")) return;
+    // Prevent false activations
+    if (!text.startsWith("alya ")) return;
 
     let query = text.slice(5).trim();
-    if (!query) return;
+    if (!query) return await king.reply("What do you need help with?");
 
     const allCommands = await commands;
-    let foundCommand = allCommands.find(cmd => {
+    let foundCommand = allCommands.find((cmd) => {
+      if (!cmd.pattern) return false;
       const pattern = cmd.pattern.toString().toLowerCase();
-      return query.toLowerCase().startsWith(pattern);
+      return query.startsWith(pattern);
     });
 
     if (foundCommand) {
@@ -67,33 +80,34 @@ command(
       const fakeMessage = { ...m, body: `${hand}${foundCommand.pattern}` };
       let whats = new (require("../lib/Base").King)(king.client, fakeMessage, fakeMessage);
       await foundCommand.function(whats, "", fakeMessage, king.client);
-    } else {
-      let mediaBase64 = null;
-      let mimeType = null;
+      return;
+    }
 
-      if (king.reply_message) {
-        if (king.reply_message.text) {
-          query = king.reply_message.text;
-        } else if (king.reply_message.mimetype) {
-          const mediaBuffer = await downloadMediaMessage(king.reply_message, "buffer");
-          if (!mediaBuffer) return await king.reply("*_Failed to download media._*");
+    // AI Processing (If no command is found)
+    let mediaBase64 = null;
+    let mimeType = null;
 
-          const fileSizeMB = mediaBuffer.length / (1024 * 1024);
-          if (fileSizeMB > MAX_FILE_SIZE_MB) return await king.reply("*_File size exceeds 200MB limit._*");
+    if (king.reply_message) {
+      if (king.reply_message.text) {
+        query = king.reply_message.text;
+      } else if (king.reply_message.mimetype) {
+        const mediaBuffer = await downloadMediaMessage(king.reply_message, "buffer");
+        if (!mediaBuffer) return await king.reply("*_Failed to download media._*");
 
-          mimeType = king.reply_message.mimetype;
-          if (mimeType.startsWith("image/") || mimeType.startsWith("video/")) {
-            mediaBase64 = await encodeFileToBase64(mediaBuffer);
-            query = query || "Describe this media";
-          } else {
-            return await king.reply("*_Unsupported media format. Use an image or video._*");
-          }
+        const fileSizeMB = mediaBuffer.length / (1024 * 1024);
+        if (fileSizeMB > 200) return await king.reply("*_File size exceeds 200MB limit._*");
+
+        mimeType = king.reply_message.mimetype;
+        if (mimeType.startsWith("image/") || mimeType.startsWith("video/")) {
+          mediaBase64 = await encodeFileToBase64(mediaBuffer);
+          query = query || "Describe this media";
+        } else {
+          return await king.reply("*_Unsupported media format. Use an image or video._*");
         }
       }
-
-      const responseText = await sendToGemini(query, mediaBase64, mimeType);
-
-      await king.reply(responseText);
     }
+
+    const responseText = await sendToGemini(query, mediaBase64, mimeType);
+    await king.reply(responseText);
   }
 );
