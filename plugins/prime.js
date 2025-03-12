@@ -26,7 +26,7 @@ function isAuthorized(sender) {
   );
 }
 
-// Command to explicitly toggle Alya ON or OFF
+// **Command to toggle Alya ON/OFF**
 command(
   {
     pattern: "alya",
@@ -51,6 +51,8 @@ command(
     }
   }
 );
+
+// **Alya Main Listener**
 command(
   {
     on: "text",
@@ -58,22 +60,21 @@ command(
   async (king, match, m) => {
     if (!primeListener || !isAuthorized(m.sender)) return;
 
-    const text = m.body.trim().toLowerCase();
+    const text = m.body.trim();
+    if (!text.toLowerCase().startsWith("alya")) return;
 
-    // Check if the message contains "alya" anywhere
-    if (!text.includes("alya")) return;
-
-    // Extract the part after "alya" if it's at the beginning, otherwise take the whole message
-    let query = text.replace(/alya/gi, "").trim();
+    // Extract words after "alya"
+    let query = text.replace(/^alya\s*/i, "").trim();
     if (!query) return await king.reply("What do you need help with?");
 
     const allCommands = await commands;
-    
-    // Try to find a matching command in the query
+    const queryWords = query.split(/\s+/);
+
+    // **Check if any word after "alya" is a command**
     let foundCommand = allCommands.find((cmd) => {
       if (!cmd.pattern) return false;
-      const pattern = cmd.pattern.toString().toLowerCase();
-      return query.includes(pattern); // Instead of startsWith(), use includes()
+      const pattern = cmd.pattern.toString().toLowerCase().replace(/[\/\^$]/g, "");
+      return queryWords.some((word) => word === pattern);
     });
 
     if (foundCommand) {
@@ -84,7 +85,7 @@ command(
       return;
     }
 
-    // AI Processing (If no command is found)
+    // **AI Processing (if no command is found)**
     let mediaBase64 = null;
     let mimeType = null;
 
