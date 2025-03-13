@@ -27,7 +27,7 @@
 
 ### 2️⃣ Get Credentials (creds.json)
 
-<a href="https://pair-code-pfys.onrender.com"><img src="https://img.shields.io/badge/Get Credentials (creds.json)-blue?style=for-the-badge"/></a>
+<a href="https://alya-pair-ifjo.onrender.com/pair"><img src="https://img.shields.io/badge/Get Credentials (creds.json)-blue?style=for-the-badge"/></a>
 
 ### 3️⃣ Deploy on Various Platforms
 
