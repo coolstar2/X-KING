@@ -10,49 +10,72 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/KING-DAVIDX/followers"><img title="Followers" src="https://img.shields.io/github/followers/KING-DAVIDX?color=red&style=flat-square"></a>
-  <a href="https://github.com/KING-DAVIDX/X-KING/stargazers/"><img title="Stars" src="https://img.shields.io/github/stars/KING-DAVIDX/X-KING?color=blue&style=flat-square"></a>
+  <a href="https://github.com/KING-DAVIDX"><img title="Followers" src="https://img.shields.io/github/followers/KING-DAVIDX?color=red&style=flat-square"></a>
+  <a href="https://github.com/KING-DAVIDX/X-KING/stargazers"><img title="Stars" src="https://img.shields.io/github/stars/KING-DAVIDX/X-KING?color=blue&style=flat-square"></a>
   <a href="https://github.com/KING-DAVIDX/X-KING/network/members"><img title="Forks" src="https://img.shields.io/github/forks/KING-DAVIDX/X-KING?color=red&style=flat-square"></a>
   <a href="https://github.com/KING-DAVIDX/X-KING/watchers"><img title="Watching" src="https://img.shields.io/github/watchers/KING-DAVIDX/X-KING?label=Watchers&color=blue&style=flat-square"></a>
-  <a href="https://github.com/KING-DAVIDX/X-KING/"><img title="Size" src="https://img.shields.io/github/repo-size/KING-DAVIDX/X-KING?style=flat-square&color=green"></a>
+  <a href="https://github.com/KING-DAVIDX/X-KING"><img title="Size" src="https://img.shields.io/github/repo-size/KING-DAVIDX/X-KING?style=flat-square&color=green"></a>
 </p>
 
 ---
 
 ## ⚡ Setup Guide
 
-### 1️⃣ Fork This Repo
+### 1️⃣ Fork & Star the Repository
+Click the button below to fork the repo and give it a star:  
 
 <a href="https://github.com/KING-DAVIDX/X-KING/fork"><img src="https://img.shields.io/badge/Fork This Repo-black?style=for-the-badge&logo=git&logoColor=white"/></a>
 
-### 2️⃣ Get Credentials (creds.json)
+---
+
+### 2️⃣ Get Your Credentials (creds.json)
+Get your session credentials by clicking the button below:  
 
 <a href="https://alya-pair-ifjo.onrender.com/pair"><img src="https://img.shields.io/badge/Get Credentials (creds.json)-blue?style=for-the-badge"/></a>
 
-### 3️⃣ Deploy on Various Platforms
+After downloading, **upload `creds.json` to the `session` folder inside the `lib` directory**.
 
-#### Deploy on Render
+---
+
+### 3️⃣ Configure the Bot
+Edit the `config.js` file and **set your owner number or sudo users**.
+
+---
+
+### 4️⃣ Deploy the Bot
+#### **Render Deployment (Recommended)**
+1. **Fork and star** the repository.
+2. **Get your creds.json** from the link above.
+3. **Upload `creds.json` to the `lib/session` folder**.
+4. **Edit `config.js`** to add your owner number or sudo users.
+5. **Connect your repo to Render** (https://dashboard.render.com).
+6. **Do not fill any environment variables**—you already configured `config.js`.
+7. **Deploy it!** The bot will start instantly.
+
 <a href="https://dashboard.render.com/select-repo?type=web"><img src="https://img.shields.io/badge/Deploy on Render-black?style=for-the-badge&logo=render&logoColor=white"/></a>
 
-#### Deploy on Heroku
+---
+
+#### **Other Deployment Options**
+##### **Heroku Deployment**
 <a href="https://dashboard.heroku.com/new?template=https://github.com/KING-DAVIDX/X-KING"><img src="https://img.shields.io/badge/Deploy on Heroku-purple?style=for-the-badge&logo=heroku&logoColor=white"/></a>
 
-#### Deploy on Replit
+##### **Replit Deployment**
 <a href="https://replit.com/github/KING-DAVIDX/X-KING"><img src="https://img.shields.io/badge/Deploy on Replit-red?style=for-the-badge&logo=replit&logoColor=white"/></a>
 
-#### Deploy on Railway
+##### **Railway Deployment**
 <a href="https://railway.app/new/template?repo=https://github.com/KING-DAVIDX/X-KING"><img src="https://img.shields.io/badge/Deploy on Railway-green?style=for-the-badge&logo=railway&logoColor=white"/></a>
 
 ---
 
 ## ⚠️ Important Notice
 - X-KING is **not affiliated** with WhatsApp Inc.
-- Use it **at your own risk**; misusing the bot **may lead to a ban**.
+- Use at **your own risk**. Misuse may lead to a **ban**.
 - The developer is **not responsible** for any issues caused by improper usage.
 
 ---
 
-## 📬 Connect with Me
+## 📬 Contact & Support
 <a href="mailto:xking6030@gmail.com"><img src="https://img.shields.io/badge/Email Me 📩-D14836?style=for-the-badge&logo=gmail&logoColor=white"/></a>
 
 ### 🟢 Join the Community
