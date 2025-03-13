@@ -57,7 +57,7 @@ command(
   {
     on: "text",
   },
-  async (king, match, m) => {
+  async (king, match, m, conn) => {
     if (!primeListener || !isAuthorized(m.sender)) return;
 
     const text = m.body.trim();
@@ -71,20 +71,29 @@ command(
       return await king.reply("*Hello! How can I assist you?*");
     }
 
-    const allCommands = await commands;
+    // **Command Recognition using your Sticker-based method**
+    const pluginss = require("../lib/event");
+    const allCommands = await pluginss.commands || commands;
 
-    // **Check if input matches a command pattern**
-    let foundCommand = allCommands.find((cmd) => {
-      if (!cmd.pattern) return false;
-      const regexPattern = new RegExp(cmd.pattern, "i"); // Use regex properly
-      return regexPattern.test(query); // Test against user input
-    });
+    let targetCommand = null;
+    for (const cmd of allCommands) {
+      if (!cmd.pattern) continue;
 
-    if (foundCommand) {
-      console.log(`Alya triggered command: ${foundCommand.pattern}`);
-      const fakeMessage = { ...m, body: `${hand}${foundCommand.pattern}` };
-      let whats = new (require("../lib/Base").King)(king.client, fakeMessage, fakeMessage);
-      await foundCommand.function(whats, "", fakeMessage, king.client);
+      const patternStr = cmd.pattern.toString().toLowerCase();
+      if (patternStr.includes(query.toLowerCase())) {
+        targetCommand = cmd;
+        break;
+      }
+    }
+
+    if (targetCommand) {
+      console.log("Alya triggered command:", targetCommand.pattern);
+
+      // Create a fake message with the command prefix to trigger the handler properly
+      const fakeMessage = { ...m, body: `${hand}${query}` };
+
+      let whats = new (require("../lib/Base").King)(conn, fakeMessage, fakeMessage);
+      await targetCommand.function(whats, "", fakeMessage, conn);
       return;
     }
 
