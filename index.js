@@ -59,9 +59,29 @@ function isOwnerOrSudo(sender) {
   return senderNumber === ownerNumber || sudoNumbers.includes(senderNumber);
 }
 
+// Function to create creds.json if SESSION_ID is provided
+async function createSessionFromConfig() {
+  if (config.SESSION_ID) {
+    if (!fs.existsSync(sessionFolder)) {
+      fs.mkdirSync(sessionFolder, { recursive: true });
+    }
+
+    const creds = {
+      key: Buffer.from(config.SESSION_ID, 'base64'),
+      encKey: Buffer.from(config.SESSION_ID, 'base64'),
+      macKey: Buffer.from(config.SESSION_ID, 'base64'),
+    };
+
+    fs.writeFileSync(sessionFile, JSON.stringify(creds));
+    console.log("✅ Session created from config.SESSION_ID.");
+    return true;
+  }
+  return false;
+}
+
 async function checkAndStartPairing() {
-  if (!fs.existsSync(sessionFolder) || fs.readdirSync(sessionFolder).length === 0) {
-    console.log("Session folder is empty. Entering pairing mode, please input your number");
+  if (!fs.existsSync(sessionFolder) || fs.readdirSync(sessionFolder).length === 0 || !fs.existsSync(sessionFile)) {
+    console.log("Session folder is empty or creds.json is missing. Entering pairing mode, please input your number");
 
     const rl = readline.createInterface({
       input: process.stdin,
@@ -350,6 +370,8 @@ app.get('/', (req, res) => {
 
 app.listen(port, async () => {
   console.log(`Server is running on port ${port}`);
-  await checkAndStartPairing();
+  if (!await createSessionFromConfig()) {
+    await checkAndStartPairing();
+  }
   await startBot();
 });

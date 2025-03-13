@@ -28,35 +28,24 @@ Click the button below to fork the repo and give it a star:
 
 ---
 
-### 2️⃣ Get Your Credentials (creds.json)
+### 2️⃣ Get Your SESSION ID
 Get your session credentials by clicking the button below:  
 
-<a href="https://alya-pair-ifjo.onrender.com/pair"><img src="https://img.shields.io/badge/Get Credentials (creds.json)-blue?style=for-the-badge"/></a>
-
-After downloading, **upload `creds.json` to the `session` folder inside the `lib` directory**.
+<a href="https://pair-code-pfys.onrender.com/pair"><img src="https://img.shields.io/badge/GET SESSION ID-blue?style=for-the-badge"/></a>
 
 ---
 
 ### 3️⃣ Configure the Bot
-Edit the `config.js` file and **set your owner number or sudo users**.
+Edit the `config.js` file and **set your owner number or sudo users and input your session id**.
 
 ---
 
 ### 4️⃣ Deploy the Bot
 #### **Render Deployment (Recommended)**
-1. **Fork and star** the repository.
-2. **Get your creds.json** from the link above.
-3. **Upload `creds.json` to the `lib/session` folder**.
-4. **Edit `config.js`** to add your owner number or sudo users.
-5. **Connect your repo to Render** (https://dashboard.render.com).
-6. **Do not fill any environment variables**—you already configured `config.js`.
-7. **Deploy it!** The bot will start instantly.
 
 <a href="https://dashboard.render.com/select-repo?type=web"><img src="https://img.shields.io/badge/Deploy on Render-black?style=for-the-badge&logo=render&logoColor=white"/></a>
 
 ---
-
-#### **Other Deployment Options**
 ##### **Heroku Deployment**
 <a href="https://dashboard.heroku.com/new?template=https://github.com/KING-DAVIDX/X-KING"><img src="https://img.shields.io/badge/Deploy on Heroku-purple?style=for-the-badge&logo=heroku&logoColor=white"/></a>
 
