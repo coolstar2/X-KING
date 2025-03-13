@@ -60,20 +60,24 @@ command(
   async (king, match, m) => {
     if (!primeListener || !isAuthorized(m.sender)) return;
 
-    const text = m.body.trim().toLowerCase();
-    if (!text.startsWith("alya ")) return;
+    const text = m.body.trim();
+    if (!text.toLowerCase().startsWith("alya")) return;
 
-    // Extract words after "alya"
-    let query = text.replace(/^alya\s+/i, "").trim();
-    if (!query) return await king.reply("What do you need help with?");
+    // Extract query after "alya"
+    let query = text.replace(/^alya\s*/i, "").trim();
+
+    // If only "alya" is sent, provide a default response
+    if (!query) {
+      return await king.reply("*Hello! How can I assist you?*");
+    }
 
     const allCommands = await commands;
 
-    // **Check if full query matches a command pattern**
+    // **Check if input matches a command pattern**
     let foundCommand = allCommands.find((cmd) => {
       if (!cmd.pattern) return false;
-      const pattern = cmd.pattern.toString().replace(/[\/\^$]/g, "").toLowerCase();
-      return query === pattern; // Ensure exact match instead of partial word match
+      const regexPattern = new RegExp(cmd.pattern, "i"); // Use regex properly
+      return regexPattern.test(query); // Test against user input
     });
 
     if (foundCommand) {
