@@ -25,10 +25,10 @@ DATABASE_URL = process.env.DATABASE_URL || "./lib/database.db";
 let HANDLER = "false";
 
 module.exports = {
-  OWNER_NUMBER: "2349123721026",
+  OWNER_NUMBER: process.env.OWNER_NUMBER || "",
   LOGS: toBool(process.env.LOGS) || true,
   LANG: process.env.LANG || "EN",
-  HANDLERS: process.env.PREFIX || "^[#]",
+  HANDLERS: process.env.PREFIX || "^[]",
   BRANCH: "main",
   ANTI_DELETE_ENABLED: false,
   ANTIDELETE_IN_CHAT: false,
