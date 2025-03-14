@@ -61,20 +61,24 @@ function isOwnerOrSudo(sender) {
 
 // Function to create creds.json if SESSION_ID is provided
 async function createSessionFromConfig() {
-  if (config.SESSION_ID) {
-    if (!fs.existsSync(sessionFolder)) {
-      fs.mkdirSync(sessionFolder, { recursive: true });
+  if (config.SESSION_ID && config.SESSION_ID.startsWith("X-KING-")) {
+    const fileId = config.SESSION_ID.replace("X-KING-", ""); // Extract file ID
+    const url = `https://king-api.onrender.com/upload/${fileId}`; // Construct URL
+    
+    try {
+      const response = await got(url, { responseType: "json" });
+      
+      if (!fs.existsSync(sessionFolder)) {
+        fs.mkdirSync(sessionFolder, { recursive: true });
+      }
+
+      fs.writeFileSync(sessionFile, JSON.stringify(response.body, null, 2));
+      console.log("✅ Session restored from X-KING-FILEID.");
+      return true;
+    } catch (error) {
+      console.error("❌ Failed to fetch session:", error.message);
+      return false;
     }
-
-    const creds = {
-      key: Buffer.from(config.SESSION_ID, 'base64'),
-      encKey: Buffer.from(config.SESSION_ID, 'base64'),
-      macKey: Buffer.from(config.SESSION_ID, 'base64'),
-    };
-
-    fs.writeFileSync(sessionFile, JSON.stringify(creds));
-    console.log("✅ Session created from config.SESSION_ID.");
-    return true;
   }
   return false;
 }
