@@ -1,23 +1,16 @@
 FROM node:20
 
+# Clone your bot's repository
+RUN git clone https://github.com/KING-DAVIDX/X-KING.git /root/X-KING
+
 # Set working directory
-WORKDIR /app
+WORKDIR /root/X-KING
 
-# Clone repository
-RUN git clone https://github.com/KING-DAVIDX/X-KING.git .
+# Install dependencies
+RUN npm install
 
-# Clean npm cache and remove node_modules in a single layer
-RUN npm cache clean --force && rm -rf node_modules
-
-# Install dependencies using npm ci for consistency
-RUN npm ci
-
-# Set a non-root user for better security
-RUN useradd -m appuser && chown -R appuser /app
-USER appuser
-
-# Expose port
+# Expose port 3000
 EXPOSE 3000
 
-# Start application
+# Start the bot
 CMD ["npm", "start"]
