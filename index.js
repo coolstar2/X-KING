@@ -177,6 +177,7 @@ async function startBot() {
               }
             } catch (error) {
               console.error(`Failed to download plugin ${plugin.dataValues.name}:`, error);
+              await conn.sendMessage(conn.user.id, { text: `⚠️ *Plugin Error:* Failed to download plugin ${plugin.dataValues.name}\n\n${error.message}` });
             }
           }
         });
@@ -185,7 +186,12 @@ async function startBot() {
 
         fs.readdirSync("./plugins").forEach((plugin) => {
           if (path.extname(plugin).toLowerCase() === ".js") {
-            require("./plugins/" + plugin);
+            try {
+              require("./plugins/" + plugin);
+            } catch (error) {
+              console.error(`⚠️ Error loading plugin ${plugin}:`, error);
+              conn.sendMessage(conn.user.id, { text: `⚠️ *Plugin Error:* Failed to load plugin ${plugin}\n\n${error.message}` });
+            }
           }
         });
 
@@ -218,6 +224,7 @@ async function startBot() {
         }
       } catch (error) {
         console.log("Error in message update handling:", error);
+        await conn.sendMessage(conn.user.id, { text: `⚠️ *Error in message update handling:*\n\n${error.message}` });
       }
     });
 
@@ -279,8 +286,8 @@ async function startBot() {
         events.commands.map(async (command) => {
           if (
             command.fromMe &&
-            !isBotMaster(msg.sender) && // Check if sender is a bot master
-            !isOwnerOrSudo(msg.sender) // Check if sender is owner or in SUDO list
+            !isBotMaster(msg.sender) &&
+            !isOwnerOrSudo(msg.sender)
           )
             return;
 
@@ -301,64 +308,68 @@ async function startBot() {
             }
 
             let whats = new King(conn, msg, ms);
-            command.function(whats, match, msg, conn);
+
+            try {
+              command.function(whats, match, msg, conn);
+            } catch (error) {
+              console.error("⚠️ Plugin execution error:", error);
+              await conn.sendMessage(msg.from, { text: `⚠️ *Error in plugin:* ${command.pattern}\n\n${error.message}` });
+            }
             return;
           }
 
           if (command.on) {
             let whats = new King(conn, msg, ms);
-
-            switch (command.on) {
-              case "text":
-                if (text_msg) command.function(whats, text_msg, msg, conn, m);
-                break;
-
-              case "image":
-                if (msg.message?.imageMessage)
-                  command.function(whats, msg.message.imageMessage, msg, conn, m);
-                break;
-
-              case "video":
-                if (msg.message?.videoMessage)
-                  command.function(whats, msg.message.videoMessage, msg, conn, m);
-                break;
-
-              case "audio":
-                if (msg.message?.audioMessage)
-                  command.function(whats, msg.message.audioMessage, msg, conn, m);
-                break;
-
-              case "sticker":
-                if (msg.message?.stickerMessage)
-                  command.function(whats, msg.message.stickerMessage, msg, conn, m);
-                break;
-
-              case "document":
-                if (msg.message?.documentMessage)
-                  command.function(whats, msg.message.documentMessage, msg, conn, m);
-                break;
-
-              case "reaction":
-                if (msg.message?.reactionMessage)
-                  command.function(whats, msg.message.reactionMessage, msg, conn, m);
-                break;
-
-              case "status":
-                if (msg.key.remoteJid === "status@broadcast" && msg.message)
-                  command.function(whats, msg, conn, m);
-                break;
-
-              default:
-                console.log(`⚠️ Unknown event type: ${command.on}`);
+            try {
+              switch (command.on) {
+                case "text":
+                  if (text_msg) command.function(whats, text_msg, msg, conn, m);
+                  break;
+                case "image":
+                  if (msg.message?.imageMessage)
+                    command.function(whats, msg.message.imageMessage, msg, conn, m);
+                  break;
+                case "video":
+                  if (msg.message?.videoMessage)
+                    command.function(whats, msg.message.videoMessage, msg, conn, m);
+                  break;
+                case "audio":
+                  if (msg.message?.audioMessage)
+                    command.function(whats, msg.message.audioMessage, msg, conn, m);
+                  break;
+                case "sticker":
+                  if (msg.message?.stickerMessage)
+                    command.function(whats, msg.message.stickerMessage, msg, conn, m);
+                  break;
+                case "document":
+                  if (msg.message?.documentMessage)
+                    command.function(whats, msg.message.documentMessage, msg, conn, m);
+                  break;
+                case "reaction":
+                  if (msg.message?.reactionMessage)
+                    command.function(whats, msg.message.reactionMessage, msg, conn, m);
+                  break;
+                case "status":
+                  if (msg.key.remoteJid === "status@broadcast" && msg.message)
+                    command.function(whats, msg, conn, m);
+                  break;
+                default:
+                  console.log(`⚠️ Unknown event type: ${command.on}`);
+              }
+            } catch (error) {
+              console.error(`⚠️ Error in "${command.on}" event handler:`, error);
+              await conn.sendMessage(conn.user.id, { text: `⚠️ *Error in "${command.on}" event handler:*\n\n${error.message}` });
             }
           }
         });
-      } catch (e) {
-        console.log("Error processing messages.upsert:", e.stack);
+      } catch (error) {
+        console.error("Error in messages.upsert:", error);
+        await conn.sendMessage(conn.user.id, { text: `⚠️ *Error in messages.upsert:*\n\n${error.message}` });
       }
     });
   } catch (error) {
     console.error("Error in startBot:", error);
+    await conn.sendMessage(conn.user.id, { text: `⚠️ *Error in startBot:*\n\n${error.message}` });
   }
 }
 

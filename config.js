@@ -28,7 +28,7 @@ module.exports = {
   OWNER_NUMBER: process.env.OWNER_NUMBER || "",
   LOGS: toBool(process.env.LOGS) || true,
   LANG: process.env.LANG || "EN",
-  HANDLERS: process.env.PREFIX || "^[]",
+  HANDLERS: process.env.PREFIX || "#",
   BRANCH: "main",
   ANTI_DELETE_ENABLED: false,
   ANTIDELETE_IN_CHAT: false,
