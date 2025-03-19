@@ -6,7 +6,7 @@ const fileType = require("file-type");
 const Tesseract = require("tesseract.js");
 const config = require("../config");
 const { commands } = require("../lib/event");
-const hand = config.HANDLERS[2];
+const hand = config.HANDLERS;
 const { encodeFileToBase64, sendToGemini } = require("../lib/aiModule");
 
 if (typeof config.PRIME === "undefined") config.PRIME = true;

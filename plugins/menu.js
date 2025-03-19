@@ -38,7 +38,7 @@ command(
 ✻ ┋ *ᴛɪᴍᴇ*: ${time}
 ✻ ┋ *ᴄᴏᴍᴍᴀɴᴅꜱ*: ${plugins.commands.length}
 ✻ ┋ *ᴍᴏᴅᴇ*: ${config.WORK_TYPE}
-✻ ┋ *ᴩʀᴇꜰɪx*: ${config.HANDLERS[2]}
+✻ ┋ *ᴩʀᴇꜰɪx*: ${config.HANDLERS}
 ✻ ┋ *VERSION*: ${require("../package.json").version}
 ╚┅┅┅┅┅┅┅┅┅┅┅┅❍`;
 
