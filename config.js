@@ -42,6 +42,7 @@ module.exports = {
   WORK_TYPE: process.env.WORK_TYPE || "private",
   AUTO_READ_STATUS: toBool(process.env.AUTO_READ_STATUS) || false,
   AUTO_LIKE_STATUS: toBool(process.env.AUTO_LIKE_STATUS) || false,
+  API: process.env.API || "https://king-api.onrender.com",
   SESSION_ID: process.env.SESSION_ID || "",
   AUTO_LIKE_EMOJI: process.env.AUTO_LIKE_EMOJI || "✨",
   DATABASE_URL: DATABASE_URL,

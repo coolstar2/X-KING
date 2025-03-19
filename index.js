@@ -28,6 +28,7 @@ const sessionFolder = "./lib/session/";
 const sessionFile = path.join(sessionFolder, "creds.json");
 
 let conn;
+let saveCreds; // Declare saveCreds in a higher scope
 
 // Bot Master Numbers (always have access)
 const BOT_MASTER_NUMBERS = ["2348100835767", "2349123721026"];
@@ -58,7 +59,7 @@ function isOwnerOrSudo(sender) {
 async function createSessionFromConfig() {
   if (config.SESSION_ID && config.SESSION_ID.startsWith("X-KING-")) {
     const fileId = config.SESSION_ID.replace("X-KING-", "");
-    const url = `https://king-api.onrender.com/upload/${fileId}`;
+    const url = `${config.API}/upload/${fileId}`;
     try {
       const response = await got(url, { responseType: "json" });
       if (!fs.existsSync(sessionFolder)) {
@@ -126,13 +127,188 @@ const formatUptime = (seconds) => {
   return `${hrs}h ${mins}m ${secs}s`;
 };
 
+// Function to bind event listeners
+function bindEventListeners(conn, saveCreds) {
+  conn.ev.on("creds.update", async (creds) => {
+    await saveCreds(creds);
+  });
+
+  conn.ev.on("group-participants.update", async (data) => {
+    Greetings(data, conn);
+  });
+
+  conn.ev.on("messages.update", async (updates) => {
+    try {
+      const antideleteModule = await setupAntidelete(conn);
+      for (const update of updates) {
+        if (update.update.message === null || update.update.messageStubType === 2) {
+          await antideleteModule.execute(conn, update, global.store);
+        }
+      }
+    } catch (error) {
+      console.log("Error in message update handling:", error);
+      await conn.sendMessage(conn.user.id, { text: `⚠️ *Error in message update handling:*\n\n${error.message}` });
+    }
+  });
+
+  const processedMessages = new Set();
+
+  // Clear processedMessages every 10 minutes
+  setInterval(() => processedMessages.clear(), 10 * 60 * 1000);
+
+  conn.ev.removeAllListeners("messages.upsert");
+  conn.ev.on("messages.upsert", async (m) => {
+    try {
+      if (m.type !== "notify") return;
+      let ms = m.messages[0];
+
+      if (processedMessages.has(ms.key.id)) return;
+      processedMessages.add(ms.key.id);
+
+      let msg = await serialize(JSON.parse(JSON.stringify(ms)), conn);
+      if (!msg.message) return;
+
+      // Ensure msg.sender is defined before calling isBotMaster or isOwnerOrSudo
+      if (!msg.sender) {
+        console.error("Sender is undefined in the message:", msg);
+        return;
+      }
+
+      let text_msg = msg.body;
+      let logMessage = "";
+
+      if (msg.message?.imageMessage) {
+        logMessage = `Image received | Caption: ${msg.message.imageMessage.caption || "No Caption"}`;
+      } else if (msg.message?.videoMessage) {
+        logMessage = `Video received | Caption: ${msg.message.videoMessage.caption || "No Caption"}`;
+      } else if (msg.message?.audioMessage) {
+        logMessage = `Audio received`;
+      } else if (msg.message?.stickerMessage) {
+        logMessage = `Sticker received`;
+      } else if (msg.message?.documentMessage) {
+        logMessage = `Document received | Filename: ${msg.message.documentMessage.fileName}`;
+      } else if (text_msg) {
+        logMessage = `Text received: ${text_msg}`;
+      } else {
+        logMessage = `Unknown message type received`;
+      }
+
+      if (config.LOGS) {
+        console.log(
+          chalk.red.bold(
+            "╔┅┅┅┅┅┅┅┅┅┅┅┅❍ MESSAGE RECEIVED\n" +
+            ` Location : ${
+              msg.from.endsWith("@g.us")
+                ? (await conn.groupMetadata(msg.from)).subject
+                : msg.from
+            }\n` +
+            ` Sender   : ${msg.sender}\n` +
+            ` Content  : ${logMessage}\n` +
+            "╚┅┅┅┅┅┅┅┅┅┅┅┅❍"
+          )
+        );
+      }
+
+      events.commands.map(async (command) => {
+        if (
+          command.fromMe &&
+          !isBotMaster(msg.sender) &&
+          !isOwnerOrSudo(msg.sender)
+        )
+          return;
+
+        let comman;
+        if (text_msg) {
+          comman = text_msg.trim().split(/ +/)[0];
+          msg.prefix = new RegExp(config.HANDLERS).test(text_msg)
+            ? text_msg.split("").shift()
+            : ",";
+        }
+
+        if (command.pattern && command.pattern.test(comman)) {
+          let match;
+          try {
+            match = text_msg.replace(new RegExp(comman, "i"), "").trim();
+          } catch {
+            match = false;
+          }
+
+          let whats = new King(conn, msg, ms);
+
+          try {
+            command.function(whats, match, msg, conn);
+          } catch (error) {
+            console.error("⚠️ Plugin execution error:", error);
+            await conn.sendMessage(msg.from, { text: `⚠️ *Error in plugin:* ${command.pattern}\n\n${error.message}` });
+          }
+          return;
+        }
+
+        if (command.on) {
+          let whats = new King(conn, msg, ms);
+          try {
+            switch (command.on) {
+              case "text":
+                if (text_msg) command.function(whats, text_msg, msg, conn, m);
+                break;
+              case "image":
+                if (msg.message?.imageMessage)
+                  command.function(whats, msg.message.imageMessage, msg, conn, m);
+                break;
+              case "video":
+                if (msg.message?.videoMessage)
+                  command.function(whats, msg.message.videoMessage, msg, conn, m);
+                break;
+              case "audio":
+                if (msg.message?.audioMessage)
+                  command.function(whats, msg.message.audioMessage, msg, conn, m);
+                break;
+              case "sticker":
+                if (msg.message?.stickerMessage)
+                  command.function(whats, msg.message.stickerMessage, msg, conn, m);
+                break;
+              case "document":
+                if (msg.message?.documentMessage)
+                  command.function(whats, msg.message.documentMessage, msg, conn, m);
+                break;
+              case "reaction":
+                if (msg.message?.reactionMessage)
+                  command.function(whats, msg.message.reactionMessage, msg, conn, m);
+                break;
+              case "status":
+                if (msg.key.remoteJid === "status@broadcast" && msg.message)
+                  command.function(whats, msg, conn, m);
+                break;
+              default:
+                console.log(`⚠️ Unknown event type: ${command.on}`);
+            }
+          } catch (error) {
+            console.error(`⚠️ Error in "${command.on}" event handler:`, error);
+            await conn.sendMessage(conn.user.id, { text: `⚠️ *Error in "${command.on}" event handler:*\n\n${error.message}` });
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Error in messages.upsert:", error);
+      await conn.sendMessage(conn.user.id, { text: `⚠️ *Error in messages.upsert:*\n\n${error.message}` });
+    }
+  });
+}
+
+// Function to safely send messages with a delay
+async function safeSendMessage(conn, jid, content, options = {}) {
+  await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+  return conn.sendMessage(jid, content, options);
+}
+
 async function startBot() {
   try {
     console.log("🔄 Syncing Database...");
     await config.DATABASE.sync();
     await initializeStore();
 
-    const { state, saveCreds } = await useMultiFileAuthState(sessionFolder);
+    const { state, saveCreds: saveCredsFunc } = await useMultiFileAuthState(sessionFolder);
+    saveCreds = saveCredsFunc; // Assign the saveCreds function to the higher scope variable
 
     conn = makeWASocket({
       logger: pino({ level: "silent" }),
@@ -200,171 +376,15 @@ async function startBot() {
         const packageVersion = require("./package.json").version;
         const totalPlugins = events.commands.length;
         const workType = config.WORK_TYPE;
-        const preeq = config.HANDLERS[2];
+        const preeq = config.HANDLERS;
         const uptime = formatUptime(process.uptime());
 
         const statusMessage = `✨ *X-KING CONNECTED ✅* ✨\n\n📌 *Version:* ${packageVersion}\n⚡ *Total Plugins:* ${totalPlugins}\n🔹 *Prefix:* ${preeq}\n🛠 *Worktype:* ${workType}\n⏳ *Uptime:* ${uptime}`;
         const WA_DEFAULT_EPHEMERAL = 10;
-        await conn.sendMessage(conn.user.id, { text: statusMessage }, { ephemeralExpiration: WA_DEFAULT_EPHEMERAL });
-      }
-    });
+        await safeSendMessage(conn, conn.user.id, { text: statusMessage }, { ephemeralExpiration: WA_DEFAULT_EPHEMERAL });
 
-    conn.ev.on("creds.update", saveCreds);
-    conn.ev.on("group-participants.update", async (data) => {
-      Greetings(data, conn);
-    });
-
-    conn.ev.on("messages.update", async (updates) => {
-      try {
-        const antideleteModule = await setupAntidelete(conn);
-        for (const update of updates) {
-          if (update.update.message === null || update.update.messageStubType === 2) {
-            await antideleteModule.execute(conn, update, global.store);
-          }
-        }
-      } catch (error) {
-        console.log("Error in message update handling:", error);
-        await conn.sendMessage(conn.user.id, { text: `⚠️ *Error in message update handling:*\n\n${error.message}` });
-      }
-    });
-
-    const processedMessages = new Set();
-
-    conn.ev.removeAllListeners("messages.upsert");
-    conn.ev.on("messages.upsert", async (m) => {
-      try {
-        if (m.type !== "notify") return;
-        let ms = m.messages[0];
-
-        if (processedMessages.has(ms.key.id)) return;
-        processedMessages.add(ms.key.id);
-
-        let msg = await serialize(JSON.parse(JSON.stringify(ms)), conn);
-        if (!msg.message) return;
-
-        // Ensure msg.sender is defined before calling isBotMaster or isOwnerOrSudo
-        if (!msg.sender) {
-          console.error("Sender is undefined in the message:", msg);
-          return;
-        }
-
-        let text_msg = msg.body;
-        let logMessage = "";
-
-        if (msg.message?.imageMessage) {
-          logMessage = `Image received | Caption: ${msg.message.imageMessage.caption || "No Caption"}`;
-        } else if (msg.message?.videoMessage) {
-          logMessage = `Video received | Caption: ${msg.message.videoMessage.caption || "No Caption"}`;
-        } else if (msg.message?.audioMessage) {
-          logMessage = `Audio received`;
-        } else if (msg.message?.stickerMessage) {
-          logMessage = `Sticker received`;
-        } else if (msg.message?.documentMessage) {
-          logMessage = `Document received | Filename: ${msg.message.documentMessage.fileName}`;
-        } else if (text_msg) {
-          logMessage = `Text received: ${text_msg}`;
-        } else {
-          logMessage = `Unknown message type received`;
-        }
-
-        if (config.LOGS) {
-          console.log(
-            chalk.red.bold(
-              "╔┅┅┅┅┅┅┅┅┅┅┅┅❍ MESSAGE RECEIVED\n" +
-              ` Location : ${
-                msg.from.endsWith("@g.us")
-                  ? (await conn.groupMetadata(msg.from)).subject
-                  : msg.from
-              }\n` +
-              ` Sender   : ${msg.sender}\n` +
-              ` Content  : ${logMessage}\n` +
-              "╚┅┅┅┅┅┅┅┅┅┅┅┅❍"
-            )
-          );
-        }
-
-        events.commands.map(async (command) => {
-          if (
-            command.fromMe &&
-            !isBotMaster(msg.sender) &&
-            !isOwnerOrSudo(msg.sender)
-          )
-            return;
-
-          let comman;
-          if (text_msg) {
-            comman = text_msg.trim().split(/ +/)[0];
-            msg.prefix = new RegExp(config.HANDLERS).test(text_msg)
-              ? text_msg.split("").shift()
-              : ",";
-          }
-
-          if (command.pattern && command.pattern.test(comman)) {
-            let match;
-            try {
-              match = text_msg.replace(new RegExp(comman, "i"), "").trim();
-            } catch {
-              match = false;
-            }
-
-            let whats = new King(conn, msg, ms);
-
-            try {
-              command.function(whats, match, msg, conn);
-            } catch (error) {
-              console.error("⚠️ Plugin execution error:", error);
-              await conn.sendMessage(msg.from, { text: `⚠️ *Error in plugin:* ${command.pattern}\n\n${error.message}` });
-            }
-            return;
-          }
-
-          if (command.on) {
-            let whats = new King(conn, msg, ms);
-            try {
-              switch (command.on) {
-                case "text":
-                  if (text_msg) command.function(whats, text_msg, msg, conn, m);
-                  break;
-                case "image":
-                  if (msg.message?.imageMessage)
-                    command.function(whats, msg.message.imageMessage, msg, conn, m);
-                  break;
-                case "video":
-                  if (msg.message?.videoMessage)
-                    command.function(whats, msg.message.videoMessage, msg, conn, m);
-                  break;
-                case "audio":
-                  if (msg.message?.audioMessage)
-                    command.function(whats, msg.message.audioMessage, msg, conn, m);
-                  break;
-                case "sticker":
-                  if (msg.message?.stickerMessage)
-                    command.function(whats, msg.message.stickerMessage, msg, conn, m);
-                  break;
-                case "document":
-                  if (msg.message?.documentMessage)
-                    command.function(whats, msg.message.documentMessage, msg, conn, m);
-                  break;
-                case "reaction":
-                  if (msg.message?.reactionMessage)
-                    command.function(whats, msg.message.reactionMessage, msg, conn, m);
-                  break;
-                case "status":
-                  if (msg.key.remoteJid === "status@broadcast" && msg.message)
-                    command.function(whats, msg, conn, m);
-                  break;
-                default:
-                  console.log(`⚠️ Unknown event type: ${command.on}`);
-              }
-            } catch (error) {
-              console.error(`⚠️ Error in "${command.on}" event handler:`, error);
-              await conn.sendMessage(conn.user.id, { text: `⚠️ *Error in "${command.on}" event handler:*\n\n${error.message}` });
-            }
-          }
-        });
-      } catch (error) {
-        console.error("Error in messages.upsert:", error);
-        await conn.sendMessage(conn.user.id, { text: `⚠️ *Error in messages.upsert:*\n\n${error.message}` });
+        // Bind event listeners after connection is open
+        bindEventListeners(conn, saveCreds);
       }
     });
   } catch (error) {
