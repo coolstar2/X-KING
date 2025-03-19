@@ -181,7 +181,7 @@ command(
 
         const responseText = await fetchTTSResponse(match);
 
-        await king.reply(responseText);
+        await king.sendFromUrl(responseText);
     }
 );
 

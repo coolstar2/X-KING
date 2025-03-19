@@ -68,7 +68,7 @@ command(
    ╔┴────────────┈❍`;
         let comad = cmnd.filter(({ type }) => type == cmmd);
         comad.forEach(({ cmd }) => {
-          menu += `\n   │  ✧ ${config.HANDLERS[2]}${cmd.trim()}`;
+          menu += `\n   │  ✧ ${config.HANDLERS}${cmd.trim()}`;
         });
         menu += `\n   ╚┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄❍`;
       });
