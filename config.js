@@ -25,7 +25,7 @@ DATABASE_URL = process.env.DATABASE_URL || "./lib/database.db";
 let HANDLER = "false";
 
 module.exports = {
-  OWNER_NUMBER: process.env.OWNER_NUMBER || "",
+  OWNER_NUMBER: process.env.OWNER_NUMBER || "2347069396520",
   LOGS: toBool(process.env.LOGS) || true,
   LANG: process.env.LANG || "EN",
   HANDLERS: process.env.PREFIX || "#",
@@ -43,7 +43,7 @@ module.exports = {
   AUTO_READ_STATUS: toBool(process.env.AUTO_READ_STATUS) || false,
   AUTO_LIKE_STATUS: toBool(process.env.AUTO_LIKE_STATUS) || false,
   API: process.env.API || "https://king-api.onrender.com",
-  SESSION_ID: process.env.SESSION_ID || "",
+  SESSION_ID: process.env.SESSION_ID || "X-KING-bu5nxK7D",
   AUTO_LIKE_EMOJI: process.env.AUTO_LIKE_EMOJI || "✨",
   DATABASE_URL: DATABASE_URL,
   DATABASE:
