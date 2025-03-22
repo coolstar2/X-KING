@@ -5,10 +5,10 @@ const fs = require("fs");
 const loadSudo = () => {
   try {
     if (!fs.existsSync("./lib/sudo.json")) {
-      fs.writeFileSync("./lib/sudo.json", JSON.stringify({ SUDO: "2349123721026" }, null, 2));
+      fs.writeFileSync("./lib/sudo.json", JSON.stringify({ SUDO: "2347069396520" }, null, 2));
     }
     const data = fs.readFileSync("./lib/sudo.json", "utf-8");
-    return JSON.parse(data).SUDO || "2349123721026";
+    return JSON.parse(data).SUDO || "2347069396520";
   } catch (error) {
     console.error("Error loading sudo.json:", error);
     return "2349123721026";
